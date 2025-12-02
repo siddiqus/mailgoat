@@ -328,7 +328,7 @@ function SendEmail() {
 
   if (loading) {
     return (
-      <div className="container mt-4">
+      <div className="container mt-5">
         <div className="text-center py-5">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading...</span>
@@ -339,7 +339,7 @@ function SendEmail() {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-5">
       <h2 className="mb-4">Send Email</h2>
 
       {templates.length === 0 ? (

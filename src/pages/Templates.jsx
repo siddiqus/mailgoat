@@ -79,7 +79,7 @@ function Templates() {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Templates</h2>
         <button className="btn btn-primary" onClick={handleCreateClick}>

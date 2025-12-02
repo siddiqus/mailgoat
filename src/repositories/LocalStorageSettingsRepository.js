@@ -3,7 +3,7 @@
  */
 class LocalStorageSettingsRepository {
   constructor() {
-    this.storageKey = 'contactly_settings'
+    this.storageKey = 'MailGoat_settings'
   }
 
   /**

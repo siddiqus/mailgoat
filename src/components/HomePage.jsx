@@ -7,7 +7,7 @@ function HomePage() {
       <div className="row justify-content-center">
         <div className="col-lg-8">
           <div className="text-center mb-5">
-            <h1 className="display-4 mb-3">Welcome to Contactly</h1>
+            <h1 className="display-4 mb-3">Welcome to MailGoat</h1>
             <p className="lead text-muted">
               Manage your email templates and send personalized emails with ease
             </p>

@@ -125,7 +125,7 @@ function Settings() {
 
   if (loading) {
     return (
-      <div className="container mt-4">
+      <div className="container mt-5">
         <div className="text-center py-5">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading...</span>
@@ -136,7 +136,7 @@ function Settings() {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-5">
       <h2 className="mb-4">Settings</h2>
 
       <div className="row">

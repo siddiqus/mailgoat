@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid'
 class LocalStorageTemplateRepository extends ITemplateRepository {
   constructor() {
     super()
-    this.storageKey = 'contactly_templates'
+    this.storageKey = 'MailGoat_templates'
   }
 
   /**
