@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
-import { validateCSVData, parseCSVFile, prepareBulkEmailData } from '../services/csvService'
+import {
+  validateDataRows,
+  parseFile,
+  prepareBulkEmailData,
+} from '../services/fileParsingService'
 import { sendSingleEmail, sendBulkEmails } from '../services/emailService'
 import { getAllTemplates } from '../services/templateRepositoryService'
 import {
@@ -28,10 +32,10 @@ function SendEmail() {
 
   // Bulk email state
   const [bulkTemplate, setBulkTemplate] = useState(null)
-  const [bulkInputMode, setBulkInputMode] = useState('csv') // 'csv' or 'manual'
-  const [csvFile, setCsvFile] = useState(null)
-  const [csvData, setCsvData] = useState([])
-  const [csvErrors, setCsvErrors] = useState([])
+  const [bulkInputMode, setBulkInputMode] = useState('file') // 'file' or 'manual'
+  const [uploadedFile, setUploadedFile] = useState(null)
+  const [fileData, setFileData] = useState([])
+  const [fileErrors, setFileErrors] = useState([])
   const [previewIndex, setPreviewIndex] = useState(null)
 
   // Manual bulk entry state
@@ -206,9 +210,9 @@ function SendEmail() {
   // Bulk email functions
   const handleBulkTemplateSelect = template => {
     setBulkTemplate(template)
-    setCsvFile(null)
-    setCsvData([])
-    setCsvErrors([])
+    setUploadedFile(null)
+    setFileData([])
+    setFileErrors([])
     setPreviewIndex(null)
     setManualEntries([])
   }
@@ -286,27 +290,27 @@ function SendEmail() {
     downloadCSV(csvContent, `${bulkTemplate.name}_template.csv`)
   }
 
-  const handleCSVUpload = async event => {
+  const handleFileUpload = async event => {
     const file = event.target.files[0]
     if (!file) return
 
-    setCsvFile(file)
-    setCsvErrors([])
+    setUploadedFile(file)
+    setFileErrors([])
 
     try {
-      const data = await parseCSVFile(file)
-      const errors = validateCSVData(data, bulkTemplate?.parameters)
-      setCsvData(data)
-      setCsvErrors(errors)
+      const data = await parseFile(file)
+      const errors = validateDataRows(data, bulkTemplate?.parameters)
+      setFileData(data)
+      setFileErrors(errors)
 
       if (errors.length > 0) {
         alert(
-          `CSV validation failed with ${errors.length} error(s). Please check the errors below.`
+          `File validation failed with ${errors.length} error(s). Please check the errors below.`
         )
       }
     } catch (error) {
-      alert(`Error parsing CSV: ${error.message}`)
-      setCsvFile(null)
+      alert(`Error parsing file: ${error.message}`)
+      setUploadedFile(null)
     }
   }
 
@@ -325,19 +329,19 @@ function SendEmail() {
     let dataToSend = []
     let emailCount = 0
 
-    if (bulkInputMode === 'csv') {
-      if (csvData.length === 0) {
-        alert('Please upload a CSV file with data')
+    if (bulkInputMode === 'file') {
+      if (fileData.length === 0) {
+        alert('Please upload a file with data')
         return
       }
 
-      if (csvErrors.length > 0) {
-        alert('Please fix CSV validation errors before sending')
+      if (fileErrors.length > 0) {
+        alert('Please fix file validation errors before sending')
         return
       }
 
-      dataToSend = csvData
-      emailCount = csvData.length
+      dataToSend = fileData
+      emailCount = fileData.length
     } else {
       // Manual mode
       if (manualEntries.length === 0) {
@@ -376,9 +380,9 @@ function SendEmail() {
 
       // Reset form
       setBulkTemplate(null)
-      setCsvFile(null)
-      setCsvData([])
-      setCsvErrors([])
+      setUploadedFile(null)
+      setFileData([])
+      setFileErrors([])
       setManualEntries([])
     } catch (error) {
       console.error('Error sending bulk emails:', error)
@@ -618,35 +622,21 @@ function SendEmail() {
                       <h5 className="mb-0">1. Select Template</h5>
                     </div>
                     <div className="card-body">
-                      <div className="row g-2">
-                        <div className="col-md-7">
-                          <select
-                            className="form-select"
-                            value={bulkTemplate?.id || ''}
-                            onChange={e => {
-                              const template = templates.find(t => t.id === e.target.value)
-                              handleBulkTemplateSelect(template || null)
-                            }}
-                          >
-                            <option value="">-- Select a template --</option>
-                            {templates.map(template => (
-                              <option key={template.id} value={template.id}>
-                                {template.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="col-md-5">
-                          <button
-                            className="btn btn-outline-primary w-100"
-                            onClick={handleDownloadSampleCSV}
-                            disabled={!bulkTemplate || bulkInputMode !== 'csv'}
-                            title="Download sample CSV file"
-                          >
-                            Sample CSV
-                          </button>
-                        </div>
-                      </div>
+                      <select
+                        className="form-select"
+                        value={bulkTemplate?.id || ''}
+                        onChange={e => {
+                          const template = templates.find(t => t.id === e.target.value)
+                          handleBulkTemplateSelect(template || null)
+                        }}
+                      >
+                        <option value="">-- Select a template --</option>
+                        {templates.map(template => (
+                          <option key={template.id} value={template.id}>
+                            {template.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -663,17 +653,17 @@ function SendEmail() {
                           type="radio"
                           className="btn-check"
                           name="bulkInputMode"
-                          id="csvMode"
+                          id="fileMode"
                           autoComplete="off"
-                          checked={bulkInputMode === 'csv'}
-                          onChange={() => setBulkInputMode('csv')}
+                          checked={bulkInputMode === 'file'}
+                          onChange={() => setBulkInputMode('file')}
                           disabled={!bulkTemplate}
                         />
                         <label
                           className={`btn btn-outline-primary ${!bulkTemplate ? 'disabled' : ''}`}
-                          htmlFor="csvMode"
+                          htmlFor="fileMode"
                         >
-                          Upload CSV File
+                          Upload File (CSV/Excel)
                         </label>
 
                         <input
@@ -703,26 +693,35 @@ function SendEmail() {
                 </div>
               </div>
 
-              {bulkTemplate && bulkInputMode === 'csv' && (
+              {bulkTemplate && bulkInputMode === 'file' && (
                 <div className="card mb-3">
-                  <div className="card-header">
-                    <h5 className="mb-0">3. Upload CSV File</h5>
+                  <div className="card-header d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">3. Upload File (CSV or Excel)</h5>
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={handleDownloadSampleCSV}
+                      title="Download sample CSV file"
+                    >
+                      Download Sample CSV
+                    </button>
                   </div>
                   <div className="card-body">
                     <input
                       type="file"
                       className="form-control"
-                      accept=".csv"
-                      onChange={handleCSVUpload}
+                      accept=".csv,.xlsx,.xls"
+                      onChange={handleFileUpload}
                     />
-                    {csvFile && (
+                    {uploadedFile && (
                       <div className="mt-2 text-muted small">
-                        File: {csvFile.name} ({csvData.length} records)
+                        File: {uploadedFile.name} ({fileData.length} records)
                       </div>
                     )}
                     <div className="mt-3">
                       <small className="text-muted">
-                        Required CSV columns: <strong>recipient, cc</strong>
+                        <strong>Accepted formats:</strong> CSV (.csv), Excel (.xlsx, .xls)
+                        <br />
+                        <strong>Required columns:</strong> recipient, cc
                         {bulkTemplate.parameters && bulkTemplate.parameters.length > 0 && (
                           <>, {bulkTemplate.parameters.join(', ')}</>
                         )}
@@ -869,21 +868,21 @@ function SendEmail() {
                 </div>
               )}
 
-              {csvErrors.length > 0 && bulkInputMode === 'csv' && (
+              {fileErrors.length > 0 && bulkInputMode === 'file' && (
                 <div className="alert alert-danger">
-                  <h6 className="alert-heading">CSV Validation Errors ({csvErrors.length})</h6>
+                  <h6 className="alert-heading">File Validation Errors ({fileErrors.length})</h6>
                   <ul className="mb-0" style={{ maxHeight: '200px', overflow: 'auto' }}>
-                    {csvErrors.map((error, index) => (
+                    {fileErrors.map((error, index) => (
                       <li key={index}>{error}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {bulkInputMode === 'csv' && csvData.length > 0 && csvErrors.length === 0 && (
+              {bulkInputMode === 'file' && fileData.length > 0 && fileErrors.length === 0 && (
                 <div className="card mb-3">
                   <div className="card-header d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0">4. Review Data ({csvData.length} records)</h5>
+                    <h5 className="mb-0">4. Review Data ({fileData.length} records)</h5>
                     <button className="btn btn-success" onClick={handleBulkSend} disabled={sending}>
                       {sending ? (
                         <>
@@ -895,7 +894,7 @@ function SendEmail() {
                           Sending...
                         </>
                       ) : (
-                        `Send ${csvData.length} Emails`
+                        `Send ${fileData.length} Emails`
                       )}
                     </button>
                   </div>
@@ -921,7 +920,7 @@ function SendEmail() {
                           </tr>
                         </thead>
                         <tbody>
-                          {csvData.map((row, index) => (
+                          {fileData.map((row, index) => (
                             <tr key={index}>
                               <td>{index + 1}</td>
                               <td>{row.recipient}</td>
@@ -948,7 +947,7 @@ function SendEmail() {
 
               {/* Preview Modal */}
               {previewIndex !== null &&
-                ((bulkInputMode === 'csv' && csvData[previewIndex]) ||
+                ((bulkInputMode === 'file' && fileData[previewIndex]) ||
                   (bulkInputMode === 'manual' && manualEntries[previewIndex])) && (
                   <div
                     className="modal show d-block"
@@ -970,8 +969,8 @@ function SendEmail() {
                         <div className="modal-body">
                           {(() => {
                             const data =
-                              bulkInputMode === 'csv'
-                                ? csvData[previewIndex]
+                              bulkInputMode === 'file'
+                                ? fileData[previewIndex]
                                 : manualEntries[previewIndex]
                             const previewData = getPreviewData(data)
 
