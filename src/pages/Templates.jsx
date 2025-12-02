@@ -109,6 +109,15 @@ function Templates() {
                     </div>
                   </div>
 
+                  {template.subject && (
+                    <div className="mb-2">
+                      <small className="text-muted">Subject:</small>
+                      <div className="mt-1 fw-medium">
+                        {template.subject}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mb-3">
                     <small className="text-muted">HTML Preview:</small>
                     <div

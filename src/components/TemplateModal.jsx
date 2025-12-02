@@ -3,6 +3,7 @@ import { validateHTML, extractParameters } from '../utils/templateValidator'
 
 function TemplateModal({ show, onHide, onSave, template = null }) {
   const [name, setName] = useState('')
+  const [subject, setSubject] = useState('')
   const [htmlString, setHtmlString] = useState('')
   const [parameters, setParameters] = useState([])
   const [validationErrors, setValidationErrors] = useState([])
@@ -15,10 +16,12 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
       if (template) {
         // Edit mode
         setName(template.name || '')
+        setSubject(template.subject || '')
         setHtmlString(template.htmlString || '')
       } else {
         // Create mode
         setName('')
+        setSubject('')
         setHtmlString('')
       }
       setParameters([])
@@ -28,9 +31,9 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     }
   }, [show, template])
 
-  // Validate and extract parameters whenever HTML string changes
+  // Validate and extract parameters whenever HTML string or subject changes
   useEffect(() => {
-    if (htmlString.trim() === '') {
+    if (htmlString.trim() === '' && subject.trim() === '') {
       setParameters([])
       setValidationErrors([])
       setIsValid(true)
@@ -42,10 +45,12 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     setIsValid(validation.isValid)
     setValidationErrors(validation.errors)
 
-    // Extract parameters
-    const extractedParams = extractParameters(htmlString)
-    setParameters(extractedParams)
-  }, [htmlString])
+    // Extract parameters from both subject and HTML
+    const htmlParams = extractParameters(htmlString)
+    const subjectParams = extractParameters(subject)
+    const allParams = [...new Set([...subjectParams, ...htmlParams])]
+    setParameters(allParams)
+  }, [htmlString, subject])
 
   const validateName = (nameValue) => {
     const trimmedName = nameValue.trim()
@@ -84,6 +89,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
 
     const templateData = {
       name: name.trim(),
+      subject: subject.trim(),
       htmlString,
       parameters
     }
@@ -93,6 +99,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
 
   const handleClose = () => {
     setName('')
+    setSubject('')
     setHtmlString('')
     setParameters([])
     setValidationErrors([])
@@ -134,6 +141,23 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
             </div>
 
             <div className="mb-3">
+              <label htmlFor="subject" className="form-label">
+                Subject
+              </label>
+              <input
+                type="text"
+                id="subject"
+                className="form-control"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Enter email subject (can include {{parameters}})"
+              />
+              <div className="form-text">
+                You can use parameters in the subject, e.g., Welcome {'{{name}}'} to our platform
+              </div>
+            </div>
+
+            <div className="mb-3">
               <label htmlFor="htmlString" className="form-label">
                 HTML String <span className="text-danger">*</span>
               </label>
@@ -168,7 +192,9 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                   style={{
                     minHeight: '100px',
                     maxHeight: '300px',
-                    overflow: 'auto'
+                    overflow: 'auto',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word'
                   }}
                   dangerouslySetInnerHTML={{ __html: htmlString }}
                 />
