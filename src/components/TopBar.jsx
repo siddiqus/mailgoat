@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 function TopBar() {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
-      <div className="container-fluid">
+      <div className="container">
         <Link className="navbar-brand fw-bold fs-4 d-flex align-items-center" to="/">
           <img src="/logo.png" alt="MailGoat Logo" height="50" className="me-2" />
           MailGoat

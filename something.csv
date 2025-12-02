@@ -1,6 +1,0 @@
-Dear {{first_name}},
-
-Your CMS account will expire in {{expiration_days}} days. Please reach out.
-
-
-first_name, expiration_days

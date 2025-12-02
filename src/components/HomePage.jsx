@@ -6,14 +6,14 @@ function HomePage() {
     <div className="container mt-5">
       <div className="row justify-content-center">
         <div className="col-lg-8">
-          <div className="text-center mb-5">
+          <div className="text-center">
             <h1 className="display-4 mb-3">Welcome to MailGoat</h1>
-            <p className="lead text-muted">
+            <p className="lead text-muted mb-4">
               Manage your email templates and send personalized emails with ease
             </p>
           </div>
 
-          <div className="row g-4">
+          <div className="row g-4 mt-4">
             <div className="col-md-6">
               <Link to="/templates" className="text-decoration-none">
                 <div className="card h-100 shadow-sm hover-card">
