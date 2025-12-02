@@ -10,6 +10,13 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
   const [nameError, setNameError] = useState('')
   const [isValid, setIsValid] = useState(true)
 
+  // Convert line breaks to <br> tags
+  const processHtmlString = (html) => {
+    if (!html) return ''
+    // Replace newlines with <br> tags
+    return html.replace(/\n/g, '<br>')
+  }
+
   // Initialize form when template changes (edit mode) or modal opens
   useEffect(() => {
     if (show) {
@@ -87,10 +94,13 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
       return
     }
 
+    // Process HTML string to convert line breaks to <br> tags
+    const processedHtmlString = processHtmlString(htmlString)
+
     const templateData = {
       name: name.trim(),
       subject: subject.trim(),
-      htmlString,
+      htmlString: processedHtmlString,
       parameters
     }
 
@@ -193,12 +203,13 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                     minHeight: '100px',
                     maxHeight: '300px',
                     overflow: 'auto',
-                    wordBreak: 'break-word'
+                    wordBreak: 'break-word',
+                    whiteSpace: 'pre-wrap'
                   }}
-                  dangerouslySetInnerHTML={{ __html: htmlString }}
+                  dangerouslySetInnerHTML={{ __html: processHtmlString(htmlString) }}
                 />
                 <div className="form-text">
-                  This is how your HTML will be rendered
+                  This is how your HTML will be rendered (line breaks will be preserved)
                 </div>
               </div>
             )}

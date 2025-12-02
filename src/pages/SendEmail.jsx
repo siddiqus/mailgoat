@@ -103,11 +103,11 @@ function SendEmail() {
     }
 
     const emails = parseEmailList(emailString);
-    const invalidEmails = emails.filter(email => !validateEmail(email));
+    const invalidEmails = emails.filter((email) => !validateEmail(email));
 
     return {
       isValid: invalidEmails.length === 0,
-      invalidEmails
+      invalidEmails,
     };
   };
 
@@ -117,7 +117,9 @@ function SendEmail() {
     if (value.trim()) {
       const validation = validateEmailList(value);
       if (!validation.isValid) {
-        setRecipientsError(`Invalid email(s): ${validation.invalidEmails.join(', ')}`);
+        setRecipientsError(
+          `Invalid email(s): ${validation.invalidEmails.join(", ")}`
+        );
       } else {
         setRecipientsError("");
       }
@@ -132,7 +134,9 @@ function SendEmail() {
     if (value.trim()) {
       const validation = validateEmailList(value);
       if (!validation.isValid) {
-        setCcListError(`Invalid email(s): ${validation.invalidEmails.join(', ')}`);
+        setCcListError(
+          `Invalid email(s): ${validation.invalidEmails.join(", ")}`
+        );
       } else {
         setCcListError("");
       }
@@ -151,7 +155,11 @@ function SendEmail() {
     // Validate recipients
     const recipientsValidation = validateEmailList(recipients);
     if (!recipientsValidation.isValid) {
-      alert(`Invalid recipient email(s): ${recipientsValidation.invalidEmails.join(', ')}`);
+      alert(
+        `Invalid recipient email(s): ${recipientsValidation.invalidEmails.join(
+          ", "
+        )}`
+      );
       return;
     }
 
@@ -159,7 +167,7 @@ function SendEmail() {
     if (ccList.trim()) {
       const ccValidation = validateEmailList(ccList);
       if (!ccValidation.isValid) {
-        alert(`Invalid CC email(s): ${ccValidation.invalidEmails.join(', ')}`);
+        alert(`Invalid CC email(s): ${ccValidation.invalidEmails.join(", ")}`);
         return;
       }
     }
@@ -198,16 +206,20 @@ function SendEmail() {
         htmlBody,
       };
 
-      await sendSingleEmail(emailData);
-      alert("Email sent successfully!");
+      try {
+        await sendSingleEmail(emailData);
+        alert("Email sent successfully!");
 
-      // Reset form
-      setSelectedTemplate(null);
-      setParameterValues({});
-      setRecipients("");
-      setCcList("");
-      setRecipientsError("");
-      setCcListError("");
+        // Reset form
+        setSelectedTemplate(null);
+        setParameterValues({});
+        setRecipients("");
+        setCcList("");
+        setRecipientsError("");
+        setCcListError("");
+      } catch (error) {
+        alert(`Error sending email: ${error.message}`);
+      }
     } catch (error) {
       console.error("Error sending email:", error);
       alert(`Failed to send email: ${error.message}`);
@@ -293,8 +305,13 @@ function SendEmail() {
       );
 
       const result = await sendBulkEmails(bulkEmailData);
+      const alertString = `Emails successfully sent:\n${JSON.stringify(
+        result.success,
+        null,
+        2
+      )}\n\nEmails failed: ${JSON.stringify(result.failures, null, 2)}`;
       console.log("Bulk emails sent successfully:", result);
-      alert(`Successfully sent ${csvData.length} emails!`);
+      alert(alertString);
 
       // Reset form
       setBulkTemplate(null);
@@ -435,10 +452,14 @@ function SendEmail() {
                           Recipients <span className="text-danger">*</span>
                         </label>
                         <textarea
-                          className={`form-control ${recipientsError ? 'is-invalid' : ''}`}
+                          className={`form-control ${
+                            recipientsError ? "is-invalid" : ""
+                          }`}
                           rows="2"
                           value={recipients}
-                          onChange={(e) => handleRecipientsChange(e.target.value)}
+                          onChange={(e) =>
+                            handleRecipientsChange(e.target.value)
+                          }
                           placeholder="Enter email addresses separated by commas (e.g., user1@example.com, user2@example.com)"
                         />
                         {recipientsError ? (
@@ -447,7 +468,8 @@ function SendEmail() {
                           </div>
                         ) : (
                           <div className="form-text">
-                            Separate multiple email addresses with commas or semicolons
+                            Separate multiple email addresses with commas or
+                            semicolons
                           </div>
                         )}
                       </div>
@@ -455,19 +477,20 @@ function SendEmail() {
                       <div className="mb-3">
                         <label className="form-label">CC List (Optional)</label>
                         <textarea
-                          className={`form-control ${ccListError ? 'is-invalid' : ''}`}
+                          className={`form-control ${
+                            ccListError ? "is-invalid" : ""
+                          }`}
                           rows="2"
                           value={ccList}
                           onChange={(e) => handleCcListChange(e.target.value)}
                           placeholder="Enter CC email addresses separated by commas"
                         />
                         {ccListError ? (
-                          <div className="invalid-feedback">
-                            {ccListError}
-                          </div>
+                          <div className="invalid-feedback">{ccListError}</div>
                         ) : (
                           <div className="form-text">
-                            Separate multiple email addresses with commas or semicolons
+                            Separate multiple email addresses with commas or
+                            semicolons
                           </div>
                         )}
                       </div>
@@ -476,7 +499,11 @@ function SendEmail() {
                         className="btn btn-primary w-100"
                         onClick={handleSendEmail}
                         disabled={
-                          sending || !recipients.trim() || !subject.trim() || !!recipientsError || !!ccListError
+                          sending ||
+                          !recipients.trim() ||
+                          !subject.trim() ||
+                          !!recipientsError ||
+                          !!ccListError
                         }
                       >
                         {sending ? (
@@ -525,6 +552,7 @@ function SendEmail() {
                             maxHeight: "500px",
                             overflow: "auto",
                             wordBreak: "break-word",
+                            whiteSpace: "pre-wrap",
                           }}
                           dangerouslySetInnerHTML={{ __html: htmlBody }}
                         />
@@ -665,7 +693,11 @@ function SendEmail() {
                       <div className="card-body p-0">
                         <div
                           className="table-responsive"
-                          style={{ maxHeight: "500px", overflow: "auto" }}
+                          style={{
+                            maxHeight: "500px",
+                            overflow: "auto",
+                            padding: "0px 5px",
+                          }}
                         >
                           <table className="table table-sm table-hover mb-0">
                             <thead className="table-light sticky-top">
@@ -765,6 +797,7 @@ function SendEmail() {
                               maxHeight: "400px",
                               overflow: "auto",
                               wordBreak: "break-word",
+                              whiteSpace: "pre-wrap",
                             }}
                             dangerouslySetInnerHTML={{
                               __html: getPreviewData(csvData[previewIndex])

@@ -128,7 +128,8 @@ function Templates() {
                       style={{
                         maxHeight: '150px',
                         overflow: 'auto',
-                        fontSize: '0.9rem'
+                        fontSize: '0.9rem',
+                        whiteSpace: 'pre-wrap'
                       }}
                       dangerouslySetInnerHTML={{ __html: template.htmlString }}
                     />

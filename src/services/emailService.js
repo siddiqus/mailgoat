@@ -64,14 +64,14 @@ export const sendSingleEmail = async (emailData) => {
     }
   });
 
-  try {
-    await axios.post(settings.webhook.url, mappedBody, {
-      headers,
-    });
-  } catch (error) {
-    alert(`Error sending email: ${error.message}`);
-  }
+  await axios.post(settings.webhook.url, mappedBody, {
+    headers,
+  });
 };
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * Send bulk emails using configured webhook
@@ -79,43 +79,21 @@ export const sendSingleEmail = async (emailData) => {
  * @returns {Promise<Object>} Response from webhook
  */
 export const sendBulkEmails = async (bulkEmailData) => {
-  // Load webhook settings
-  const settings = await settingsRepository.getSettings();
-
-  if (!settings.webhook.url) {
-    throw new Error(
-      "Webhook URL not configured. Please configure it in Settings."
-    );
-  }
-
-  // Apply body mapping to each email
-  const mappedBulkData = bulkEmailData.map((emailData) =>
-    applyBodyMapping(emailData, settings.webhook.bodyMapping)
-  );
-
-  // Prepare headers
-  const headers = {
-    "Content-Type": "application/json",
+  const results = {
+    success: [],
+    failures: [],
   };
-
-  // Add custom headers from settings
-  settings.webhook.headers.forEach((header) => {
-    if (header.key.trim() !== "") {
-      headers[header.key] = header.value;
+  for (const emailData of bulkEmailData) {
+    try {
+      await sendSingleEmail(emailData);
+      results.success.push(emailData.recipients);
+      await sleep(1000);
+    } catch (error) {
+      results.failures.push(emailData.recipients);
     }
-  });
-
-  const response = await fetch(settings.webhook.url, {
-    method: "POST",
-    headers: headers,
-    body: JSON.stringify({ emails: mappedBulkData }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  return await response.json();
+  return results;
 };
 
 /**
