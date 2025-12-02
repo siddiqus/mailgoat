@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import TemplateModal from '../components/TemplateModal'
-import LocalStorageTemplateRepository from '../repositories/LocalStorageTemplateRepository'
-
-const templateRepository = new LocalStorageTemplateRepository()
+import {
+  getAllTemplates,
+  createTemplate,
+  updateTemplate,
+  deleteTemplate
+} from '../services/templateRepositoryService'
 
 function Templates() {
   const [templates, setTemplates] = useState([])
@@ -18,7 +21,7 @@ function Templates() {
   const loadTemplates = async () => {
     setLoading(true)
     try {
-      const data = await templateRepository.getAll()
+      const data = await getAllTemplates()
       setTemplates(data)
     } catch (error) {
       console.error('Error loading templates:', error)
@@ -44,7 +47,7 @@ function Templates() {
     }
 
     try {
-      await templateRepository.delete(id)
+      await deleteTemplate(id)
       await loadTemplates()
     } catch (error) {
       console.error('Error deleting template:', error)
@@ -56,10 +59,10 @@ function Templates() {
     try {
       if (editingTemplate) {
         // Update existing template
-        await templateRepository.update(editingTemplate.id, templateData)
+        await updateTemplate(editingTemplate.id, templateData)
       } else {
         // Create new template
-        await templateRepository.create(templateData)
+        await createTemplate(templateData)
       }
       await loadTemplates()
       setShowModal(false)

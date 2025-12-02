@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react'
-import Papa from 'papaparse'
-import LocalStorageTemplateRepository from '../repositories/LocalStorageTemplateRepository'
-
-const templateRepository = new LocalStorageTemplateRepository()
+import { sendSingleEmail, sendBulkEmails } from '../services/emailService'
+import {
+  replaceParameters,
+  parseEmailList,
+  prepareEmailFromTemplate,
+  generateSampleCSV,
+  downloadCSV
+} from '../services/templateService'
+import { validateCSVData, parseCSVFile, prepareBulkEmailData } from '../services/csvService'
+import { getAllTemplates } from '../services/templateRepositoryService'
 
 function SendEmail() {
   const [activeTab, setActiveTab] = useState('single')
@@ -34,7 +40,7 @@ function SendEmail() {
   const loadTemplates = async () => {
     setLoading(true)
     try {
-      const data = await templateRepository.getAll()
+      const data = await getAllTemplates()
       setTemplates(data)
     } catch (error) {
       console.error('Error loading templates:', error)
@@ -47,8 +53,10 @@ function SendEmail() {
   // Update preview when template or parameters change
   useEffect(() => {
     if (selectedTemplate) {
-      const newSubject = replaceParameters(selectedTemplate.subject || '', parameterValues)
-      const newHtmlBody = replaceParameters(selectedTemplate.htmlString || '', parameterValues)
+      const { subject: newSubject, htmlBody: newHtmlBody } = prepareEmailFromTemplate(
+        selectedTemplate,
+        parameterValues
+      )
       setSubject(newSubject)
       setHtmlBody(newHtmlBody)
     } else {
@@ -56,16 +64,6 @@ function SendEmail() {
       setHtmlBody('')
     }
   }, [selectedTemplate, parameterValues])
-
-  const replaceParameters = (text, values) => {
-    if (!text) return ''
-    let result = text
-    Object.keys(values).forEach(key => {
-      const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
-      result = result.replace(regex, values[key] || `{{${key}}}`)
-    })
-    return result
-  }
 
   const handleTemplateSelect = (template) => {
     setSelectedTemplate(template)
@@ -115,8 +113,8 @@ function SendEmail() {
     setSending(true)
     try {
       // Parse recipients and CC list
-      const recipientList = recipients.split(',').map(email => email.trim()).filter(Boolean)
-      const ccListArray = ccList.split(',').map(email => email.trim()).filter(Boolean)
+      const recipientList = parseEmailList(recipients)
+      const ccListArray = parseEmailList(ccList)
 
       const emailData = {
         recipients: recipientList,
@@ -125,22 +123,7 @@ function SendEmail() {
         htmlString: htmlBody
       }
 
-      // TODO: Replace this URL with your actual API endpoint
-      const apiUrl = 'https://api.example.com/send-email'
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData)
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
+      const result = await sendSingleEmail(emailData)
       console.log('Email sent successfully:', result)
       alert('Email sent successfully!')
 
@@ -169,133 +152,36 @@ function SendEmail() {
   const handleDownloadSampleCSV = () => {
     if (!bulkTemplate) return
 
-    const requiredColumns = ['recipient', 'cc', ...(bulkTemplate.parameters || [])]
-    const headers = requiredColumns.join(',')
-    const sampleRow = requiredColumns.map(col => {
-      if (col === 'recipient') return 'user1@example.com; user2@example.com'
-      if (col === 'cc') return 'cc@example.com (optional)'
-      return `sample_${col}`
-    }).join(',')
-
-    const csv = `${headers}\n${sampleRow}`
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${bulkTemplate.name}_template.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
+    const csvContent = generateSampleCSV(bulkTemplate)
+    downloadCSV(csvContent, `${bulkTemplate.name}_template.csv`)
   }
 
-  const validateCSVData = (data, templateParams) => {
-    const errors = []
-    const requiredColumns = ['recipient', 'cc', ...(templateParams || [])]
-
-    if (data.length === 0) {
-      errors.push('CSV file is empty')
-      return errors
-    }
-
-    const headers = Object.keys(data[0])
-
-    // Check for recipient column (required)
-    if (!headers.includes('recipient')) {
-      errors.push('Missing required column: recipient')
-    }
-
-    // Check for template parameter columns
-    const missingParams = (templateParams || []).filter(param => !headers.includes(param))
-    if (missingParams.length > 0) {
-      errors.push(`Missing template parameter columns: ${missingParams.join(', ')}`)
-    }
-
-    // Validate each row
-    data.forEach((row, index) => {
-      const rowNum = index + 2 // +2 because index starts at 0 and we have header row
-
-      // Check if recipient is provided
-      if (!row.recipient || row.recipient.trim() === '') {
-        errors.push(`Row ${rowNum}: Missing recipient email`)
-      } else {
-        // Parse multiple recipients (separated by comma or semicolon)
-        const recipients = row.recipient.split(/[,;]/).map(email => email.trim()).filter(Boolean)
-
-        if (recipients.length === 0) {
-          errors.push(`Row ${rowNum}: No valid recipient emails found`)
-        } else {
-          // Validate each recipient email
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-          recipients.forEach((email, emailIndex) => {
-            if (!emailRegex.test(email)) {
-              errors.push(`Row ${rowNum}: Invalid recipient email format "${email}"`)
-            }
-          })
-        }
-      }
-
-      // Validate CC if provided (can also have multiple emails)
-      if (row.cc && row.cc.trim() !== '') {
-        const ccEmails = row.cc.split(/[,;]/).map(email => email.trim()).filter(Boolean)
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-        ccEmails.forEach((email, emailIndex) => {
-          if (!emailRegex.test(email)) {
-            errors.push(`Row ${rowNum}: Invalid CC email format "${email}"`)
-          }
-        })
-      }
-
-      // Check for missing parameter values
-      (templateParams || []).forEach(param => {
-        if (!row[param] || row[param].trim() === '') {
-          errors.push(`Row ${rowNum}: Missing value for parameter "${param}"`)
-        }
-      })
-    })
-
-    return errors
-  }
-
-  const handleCSVUpload = (event) => {
+  const handleCSVUpload = async (event) => {
     const file = event.target.files[0]
     if (!file) return
 
     setCsvFile(file)
     setCsvErrors([])
 
-    Papa.parse(file, {
-      complete: (results) => {
-        const data = results.data.filter(row => {
-          // Filter out empty rows
-          return Object.values(row).some(val => val && val.trim() !== '')
-        })
+    try {
+      const data = await parseCSVFile(file)
+      const errors = validateCSVData(data, bulkTemplate?.parameters)
+      setCsvData(data)
+      setCsvErrors(errors)
 
-        const errors = validateCSVData(data, bulkTemplate?.parameters)
-        setCsvData(data)
-        setCsvErrors(errors)
-
-        if (errors.length > 0) {
-          alert(`CSV validation failed with ${errors.length} error(s). Please check the errors below.`)
-        }
-      },
-      header: true,
-      skipEmptyLines: true,
-      error: (error) => {
-        alert(`Error parsing CSV: ${error.message}`)
-        setCsvFile(null)
+      if (errors.length > 0) {
+        alert(`CSV validation failed with ${errors.length} error(s). Please check the errors below.`)
       }
-    })
+    } catch (error) {
+      alert(`Error parsing CSV: ${error.message}`)
+      setCsvFile(null)
+    }
   }
 
   const getPreviewData = (rowData) => {
     if (!bulkTemplate) return { subject: '', htmlBody: '' }
 
-    const previewSubject = replaceParameters(bulkTemplate.subject || '', rowData)
-    const previewHtmlBody = replaceParameters(bulkTemplate.htmlString || '', rowData)
-
-    return { subject: previewSubject, htmlBody: previewHtmlBody }
+    return prepareEmailFromTemplate(bulkTemplate, rowData)
   }
 
   const handleBulkSend = async () => {
@@ -320,45 +206,9 @@ function SendEmail() {
     setSending(true)
     try {
       // Prepare bulk email data
-      const bulkEmailData = csvData.map(row => {
-        const emailSubject = replaceParameters(bulkTemplate.subject || '', row)
-        const emailBody = replaceParameters(bulkTemplate.htmlString || '', row)
+      const bulkEmailData = prepareBulkEmailData(csvData, bulkTemplate, replaceParameters)
 
-        // Parse multiple recipients (separated by comma or semicolon)
-        const recipientList = row.recipient
-          .split(/[,;]/)
-          .map(email => email.trim())
-          .filter(Boolean)
-
-        // Parse multiple CC emails (separated by comma or semicolon)
-        const ccListArray = row.cc && row.cc.trim()
-          ? row.cc.split(/[,;]/).map(email => email.trim()).filter(Boolean)
-          : []
-
-        return {
-          recipients: recipientList,
-          ccList: ccListArray,
-          subject: emailSubject,
-          htmlString: emailBody
-        }
-      })
-
-      // TODO: Replace this URL with your actual bulk send API endpoint
-      const apiUrl = 'https://api.example.com/send-bulk-email'
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ emails: bulkEmailData })
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
+      const result = await sendBulkEmails(bulkEmailData)
       console.log('Bulk emails sent successfully:', result)
       alert(`Successfully sent ${csvData.length} emails!`)
 
