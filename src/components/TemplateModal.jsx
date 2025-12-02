@@ -193,7 +193,6 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                     minHeight: '100px',
                     maxHeight: '300px',
                     overflow: 'auto',
-                    whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word'
                   }}
                   dangerouslySetInnerHTML={{ __html: htmlString }}

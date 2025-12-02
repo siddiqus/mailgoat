@@ -11,10 +11,10 @@ function Settings() {
   const [webhookUrl, setWebhookUrl] = useState('')
   const [webhookHeaders, setWebhookHeaders] = useState([])
   const [bodyMapping, setBodyMapping] = useState({
-    recipients: '{{recipients}}',
-    ccList: '{{ccList}}',
-    subject: '{{subject}}',
-    htmlString: '{{htmlString}}'
+    recipients: 'recipients',
+    ccList: 'ccList',
+    subject: 'subject',
+    htmlBody: 'htmlBody'
   })
 
   useEffect(() => {
@@ -29,10 +29,10 @@ function Settings() {
       setWebhookUrl(data.webhook.url || '')
       setWebhookHeaders(data.webhook.headers || [])
       setBodyMapping(data.webhook.bodyMapping || {
-        recipients: '{{recipients}}',
-        ccList: '{{ccList}}',
-        subject: '{{subject}}',
-        htmlString: '{{htmlString}}'
+        recipients: 'recipients',
+        ccList: 'ccList',
+        subject: 'subject',
+        htmlBody: 'htmlBody'
       })
     } catch (error) {
       console.error('Error loading settings:', error)
@@ -165,73 +165,86 @@ function Settings() {
 
               {/* Request Body Mapping */}
               <div className="mb-4">
-                <label className="form-label fw-bold">Request Body Mapping</label>
+                <label className="form-label fw-bold">Request Body Property Mapping</label>
                 <div className="form-text mb-3">
-                  Map the email data to your API's expected format. Use placeholders: {'{{recipients}}'}, {'{{ccList}}'}, {'{{subject}}'}, {'{{htmlString}}'}
+                  Configure the property names that will be sent in the webhook request body.
+                  Enter the desired property name for each email field.
                 </div>
 
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label">Recipients Field</label>
+                    <label className="form-label">
+                      Recipients Property Name
+                      <span className="text-muted ms-2 small">(email recipients list)</span>
+                    </label>
                     <input
                       type="text"
                       className="form-control font-monospace"
                       value={bodyMapping.recipients}
                       onChange={(e) => handleBodyMappingChange('recipients', e.target.value)}
-                      placeholder="{{recipients}}"
+                      placeholder="recipients"
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">CC List Field</label>
+                    <label className="form-label">
+                      CC List Property Name
+                      <span className="text-muted ms-2 small">(email CC list)</span>
+                    </label>
                     <input
                       type="text"
                       className="form-control font-monospace"
                       value={bodyMapping.ccList}
                       onChange={(e) => handleBodyMappingChange('ccList', e.target.value)}
-                      placeholder="{{ccList}}"
+                      placeholder="ccList"
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">Subject Field</label>
+                    <label className="form-label">
+                      Subject Property Name
+                      <span className="text-muted ms-2 small">(email subject)</span>
+                    </label>
                     <input
                       type="text"
                       className="form-control font-monospace"
                       value={bodyMapping.subject}
                       onChange={(e) => handleBodyMappingChange('subject', e.target.value)}
-                      placeholder="{{subject}}"
+                      placeholder="subject"
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">HTML Body Field</label>
+                    <label className="form-label">
+                      HTML Body Property Name
+                      <span className="text-muted ms-2 small">(email HTML content)</span>
+                    </label>
                     <input
                       type="text"
                       className="form-control font-monospace"
-                      value={bodyMapping.htmlString}
-                      onChange={(e) => handleBodyMappingChange('htmlString', e.target.value)}
-                      placeholder="{{htmlString}}"
+                      value={bodyMapping.htmlBody}
+                      onChange={(e) => handleBodyMappingChange('htmlBody', e.target.value)}
+                      placeholder="htmlBody"
                     />
                   </div>
                 </div>
 
                 <div className="mt-3">
                   <details className="text-muted small">
-                    <summary className="cursor-pointer">How does body mapping work?</summary>
+                    <summary className="cursor-pointer" style={{ cursor: 'pointer' }}>How does property mapping work?</summary>
                     <div className="mt-2 ps-3">
-                      <p>The body mapping allows you to customize the JSON structure sent to your webhook.</p>
+                      <p>The property mapping allows you to customize the JSON property names sent to your webhook.</p>
                       <p><strong>Example:</strong></p>
                       <p>If you want to send data in this format:</p>
                       <pre className="bg-light p-2 rounded"><code>{`{
-  "to": [...],
-  "cc": [...],
-  "subject": "...",
-  "html": "..."
+  "to": ["user@example.com"],
+  "cc": ["cc@example.com"],
+  "email_subject": "Hello",
+  "html_content": "<p>Email body</p>"
 }`}</code></pre>
-                      <p>Set the mappings to:</p>
-                      <ul>
-                        <li>Recipients Field: <code>to</code></li>
-                        <li>CC List Field: <code>cc</code></li>
-                        <li>Subject Field: <code>subject</code></li>
-                        <li>HTML Body Field: <code>html</code></li>
+                      <p>Set the property mappings to:</p>
+                      <ul className="mb-0">
+                        <li>Recipients Property Name: <code>to</code></li>
+                        <li>CC List Property Name: <code>cc</code></li>
+                        <li>Subject Property Name: <code>email_subject</code></li>
+                        <li>HTML Body Property Name: <code>html_content</code></li>
                       </ul>
                     </div>
                   </details>
@@ -357,15 +370,15 @@ function Settings() {
               )}
 
               <div>
-                <strong className="small">Body:</strong>
+                <strong className="small">Body Structure:</strong>
                 <pre className="bg-light p-2 rounded mt-1 small mb-0" style={{ fontSize: '0.75rem', maxHeight: '300px', overflow: 'auto' }}>
                   {JSON.stringify(
-                    Object.fromEntries(
-                      Object.entries(bodyMapping).map(([key, value]) => [
-                        key,
-                        value.includes('{{') ? '<dynamic value>' : value
-                      ])
-                    ),
+                    {
+                      [bodyMapping.recipients || 'recipients']: ['email@example.com'],
+                      [bodyMapping.ccList || 'ccList']: ['cc@example.com'],
+                      [bodyMapping.subject || 'subject']: 'Email subject',
+                      [bodyMapping.htmlBody || 'htmlBody']: '<p>Email content</p>'
+                    },
                     null,
                     2
                   )}

@@ -50,10 +50,10 @@ class LocalStorageSettingsRepository {
         url: '',
         headers: [],
         bodyMapping: {
-          recipients: '{{recipients}}',
-          ccList: '{{ccList}}',
-          subject: '{{subject}}',
-          htmlString: '{{htmlString}}'
+          recipients: 'recipients',
+          ccList: 'ccList',
+          subject: 'subject',
+          htmlBody: 'htmlBody'
         }
       },
       smtp: {
