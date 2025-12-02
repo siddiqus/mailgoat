@@ -73,11 +73,26 @@ function History() {
           No emails sent yet. Sent emails will appear here in your history.
         </div>
       ) : (
-        <div className="card">
-          <div className="card-body p-0">
-            <div className="table-responsive">
+        <div>
+          <div
+            className="border rounded"
+            style={{
+              height: 'calc(100vh - 250px)',
+              minHeight: '400px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
               <table className="table table-hover mb-0">
-                <thead className="table-light">
+                <thead
+                  className="table-light"
+                  style={{
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1,
+                  }}
+                >
                   <tr>
                     <th style={{ width: '180px' }}>Sent At</th>
                     <th style={{ width: '150px' }}>Template</th>
@@ -136,7 +151,7 @@ function History() {
               </table>
             </div>
           </div>
-          <div className="card-footer text-muted">
+          <div className="text-muted mt-2">
             <small>Total: {history.length} email(s) sent</small>
           </div>
         </div>
