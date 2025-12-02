@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import History from './History'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import * as emailHistoryService from '../services/emailHistoryService'
 import * as templateRepositoryService from '../services/templateRepositoryService'
+import History from './History'
 
 // Mock the services
 vi.mock('../services/emailHistoryService')

@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   validateDataRows,
   parseCSVFile,
-  parseExcelFile,
   parseFile,
   prepareBulkEmailData,
 } from './fileParsingService'
@@ -145,7 +144,8 @@ describe('fileParsingService', () => {
     })
 
     it('should filter out empty rows', async () => {
-      const csvContent = 'recipient,cc,name\nuser@test.com,cc@test.com,John\n,,\nuser2@test.com,,Jane'
+      const csvContent =
+        'recipient,cc,name\nuser@test.com,cc@test.com,John\n,,\nuser2@test.com,,Jane'
       const blob = new Blob([csvContent], { type: 'text/csv' })
       const file = new File([blob], 'test.csv', { type: 'text/csv' })
 

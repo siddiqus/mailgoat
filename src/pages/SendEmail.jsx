@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react'
-import {
-  validateDataRows,
-  parseFile,
-  prepareBulkEmailData,
-} from '../services/fileParsingService'
 import { sendSingleEmail, sendBulkEmails } from '../services/emailService'
+import { validateDataRows, parseFile, prepareBulkEmailData } from '../services/fileParsingService'
 import { getAllTemplates } from '../services/templateRepositoryService'
 import {
   replaceParameters,
