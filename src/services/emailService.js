@@ -1,5 +1,6 @@
 import axios from 'axios'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
+import { saveToHistory } from './emailHistoryService'
 
 const settingsRepository = new LocalStorageSettingsRepository()
 
@@ -36,10 +37,10 @@ export const applyBodyMapping = (emailData, bodyMapping) => {
 /**
  * Send a single email using configured webhook
  * @param {Object} emailData - Email data with recipients, ccList, subject, htmlBody
- * @param {AbortSignal} signal - Optional abort signal for cancellation
+ * @param {Object} options - Additional options (template, signal)
  * @returns {Promise<Object>} Response from webhook
  */
-export const sendSingleEmail = async (emailData, signal = null) => {
+export const sendSingleEmail = async (emailData, options = {}) => {
   // Load webhook settings
   const settings = await settingsRepository.getSettings()
 
@@ -67,11 +68,20 @@ export const sendSingleEmail = async (emailData, signal = null) => {
     timeout: 30000, // 30 second timeout
   }
 
-  if (signal) {
-    config.signal = signal
+  if (options.signal) {
+    config.signal = options.signal
   }
 
   const response = await axios.post(settings.webhook.url, mappedBody, config)
+
+  // Save to history after successful send
+  try {
+    await saveToHistory(emailData, options.template)
+  } catch (historyError) {
+    console.error('Failed to save email to history:', historyError)
+    // Don't fail the email send if history save fails
+  }
+
   return response.data
 }
 
@@ -83,21 +93,22 @@ function sleep(ms) {
  * Send bulk emails using configured webhook
  * @param {Array<Object>} bulkEmailData - Array of email data objects
  * @param {AbortSignal} signal - Optional abort signal for cancellation
+ * @param {Object} options - Additional options (templateName, template)
  * @returns {Promise<Object>} Response from webhook
  */
-export const sendBulkEmails = async (bulkEmailData, signal = null) => {
+export const sendBulkEmails = async (bulkEmailData, options = {}) => {
   const results = {
     success: [],
     failures: [],
   }
   for (const emailData of bulkEmailData) {
     // Check if operation was cancelled
-    if (signal && signal.aborted) {
+    if (options.signal && options.signal.aborted) {
       throw new Error('Operation cancelled')
     }
 
     try {
-      await sendSingleEmail(emailData, signal)
+      await sendSingleEmail(emailData, options)
       results.success.push(emailData.recipients)
       await sleep(1000)
     } catch (error) {

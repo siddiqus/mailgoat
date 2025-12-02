@@ -180,7 +180,9 @@ function SendEmail() {
       }
 
       try {
-        await sendSingleEmail(emailData)
+        await sendSingleEmail(emailData, {
+          template: selectedTemplate,
+        })
         alert('Email sent successfully!')
 
         // Reset form
@@ -361,7 +363,9 @@ function SendEmail() {
       // Prepare bulk email data
       const bulkEmailData = prepareBulkEmailData(dataToSend, bulkTemplate, replaceParameters)
 
-      const result = await sendBulkEmails(bulkEmailData)
+      const result = await sendBulkEmails(bulkEmailData, {
+        template: bulkTemplate,
+      })
       const alertString = `Emails successfully sent:\n${JSON.stringify(
         result.success,
         null,
@@ -606,16 +610,16 @@ function SendEmail() {
           {/* Bulk Send Tab */}
           {activeTab === 'bulk' && (
             <div>
-              <div className="row">
-                <div className="col-12">
-                  <div className="card mb-3">
+              <div className="row mb-3">
+                {/* Select Template */}
+                <div className="col-md-6">
+                  <div className="card h-100">
                     <div className="card-header">
                       <h5 className="mb-0">1. Select Template</h5>
                     </div>
                     <div className="card-body">
-                      <div className="row align-items-end">
-                        <div className="col-md-8">
-                          <label className="form-label">Template</label>
+                      <div className="row g-2">
+                        <div className="col-md-7">
                           <select
                             className="form-select"
                             value={bulkTemplate?.id || ''}
@@ -632,243 +636,123 @@ function SendEmail() {
                             ))}
                           </select>
                         </div>
-                        <div className="col-md-4">
+                        <div className="col-md-5">
                           <button
                             className="btn btn-outline-primary w-100"
                             onClick={handleDownloadSampleCSV}
                             disabled={!bulkTemplate || bulkInputMode !== 'csv'}
+                            title="Download sample CSV file"
                           >
-                            Download Sample CSV
+                            Sample CSV
                           </button>
                         </div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {bulkTemplate && (
-                    <div className="card mb-3">
-                      <div className="card-header">
-                        <h5 className="mb-0">2. Choose Input Method</h5>
-                      </div>
-                      <div className="card-body">
-                        <div className="btn-group w-100" role="group">
-                          <input
-                            type="radio"
-                            className="btn-check"
-                            name="bulkInputMode"
-                            id="csvMode"
-                            autoComplete="off"
-                            checked={bulkInputMode === 'csv'}
-                            onChange={() => setBulkInputMode('csv')}
-                          />
-                          <label className="btn btn-outline-primary" htmlFor="csvMode">
-                            Upload CSV File
-                          </label>
-
-                          <input
-                            type="radio"
-                            className="btn-check"
-                            name="bulkInputMode"
-                            id="manualMode"
-                            autoComplete="off"
-                            checked={bulkInputMode === 'manual'}
-                            onChange={() => setBulkInputMode('manual')}
-                          />
-                          <label className="btn btn-outline-primary" htmlFor="manualMode">
-                            Enter Manually
-                          </label>
-                        </div>
-                      </div>
+                {/* Choose Input Method */}
+                <div className="col-md-6">
+                  <div className="card h-100">
+                    <div className="card-header">
+                      <h5 className="mb-0">2. Choose Input Method</h5>
                     </div>
-                  )}
-
-                  {bulkTemplate && bulkInputMode === 'csv' && (
-                    <div className="card mb-3">
-                      <div className="card-header">
-                        <h5 className="mb-0">3. Upload CSV File</h5>
-                      </div>
-                      <div className="card-body">
+                    <div className="card-body">
+                      <div className="btn-group w-100" role="group">
                         <input
-                          type="file"
-                          className="form-control"
-                          accept=".csv"
-                          onChange={handleCSVUpload}
+                          type="radio"
+                          className="btn-check"
+                          name="bulkInputMode"
+                          id="csvMode"
+                          autoComplete="off"
+                          checked={bulkInputMode === 'csv'}
+                          onChange={() => setBulkInputMode('csv')}
+                          disabled={!bulkTemplate}
                         />
-                        {csvFile && (
-                          <div className="mt-2 text-muted small">
-                            File: {csvFile.name} ({csvData.length} records)
-                          </div>
+                        <label
+                          className={`btn btn-outline-primary ${!bulkTemplate ? 'disabled' : ''}`}
+                          htmlFor="csvMode"
+                        >
+                          Upload CSV File
+                        </label>
+
+                        <input
+                          type="radio"
+                          className="btn-check"
+                          name="bulkInputMode"
+                          id="manualMode"
+                          autoComplete="off"
+                          checked={bulkInputMode === 'manual'}
+                          onChange={() => setBulkInputMode('manual')}
+                          disabled={!bulkTemplate}
+                        />
+                        <label
+                          className={`btn btn-outline-primary ${!bulkTemplate ? 'disabled' : ''}`}
+                          htmlFor="manualMode"
+                        >
+                          Enter Manually
+                        </label>
+                      </div>
+                      {!bulkTemplate && (
+                        <small className="text-muted d-block mt-2">
+                          Please select a template first
+                        </small>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {bulkTemplate && bulkInputMode === 'csv' && (
+                <div className="card mb-3">
+                  <div className="card-header">
+                    <h5 className="mb-0">3. Upload CSV File</h5>
+                  </div>
+                  <div className="card-body">
+                    <input
+                      type="file"
+                      className="form-control"
+                      accept=".csv"
+                      onChange={handleCSVUpload}
+                    />
+                    {csvFile && (
+                      <div className="mt-2 text-muted small">
+                        File: {csvFile.name} ({csvData.length} records)
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <small className="text-muted">
+                        Required CSV columns: <strong>recipient, cc</strong>
+                        {bulkTemplate.parameters && bulkTemplate.parameters.length > 0 && (
+                          <>, {bulkTemplate.parameters.join(', ')}</>
                         )}
-                        <div className="mt-3">
-                          <small className="text-muted">
-                            Required CSV columns: <strong>recipient, cc</strong>
-                            {bulkTemplate.parameters && bulkTemplate.parameters.length > 0 && (
-                              <>, {bulkTemplate.parameters.join(', ')}</>
-                            )}
-                            <br />
-                            <em>
-                              Note: recipient and cc columns can have multiple emails separated by
-                              commas or semicolons
-                            </em>
-                          </small>
-                        </div>
-                      </div>
+                        <br />
+                        <em>
+                          Note: recipient and cc columns can have multiple emails separated by
+                          commas or semicolons
+                        </em>
+                      </small>
                     </div>
-                  )}
+                  </div>
+                </div>
+              )}
 
-                  {bulkTemplate && bulkInputMode === 'manual' && (
-                    <div className="card mb-3">
-                      <div className="card-header d-flex justify-content-between align-items-center">
-                        <h5 className="mb-0">
-                          3. Enter Recipients Manually
-                          {manualEntries.length > 0 && (
-                            <span className="text-muted ms-2">
-                              ({manualEntries.length} recipient
-                              {manualEntries.length !== 1 ? 's' : ''})
-                            </span>
-                          )}
-                        </h5>
-                        <div>
-                          {manualEntries.length > 0 && (
-                            <button
-                              className="btn btn-sm btn-success me-2"
-                              onClick={handleBulkSend}
-                              disabled={sending}
-                            >
-                              {sending ? (
-                                <>
-                                  <span
-                                    className="spinner-border spinner-border-sm me-2"
-                                    role="status"
-                                    aria-hidden="true"
-                                  ></span>
-                                  Sending...
-                                </>
-                              ) : (
-                                `Send ${manualEntries.length} Email${manualEntries.length !== 1 ? 's' : ''}`
-                              )}
-                            </button>
-                          )}
-                          <button className="btn btn-sm btn-primary" onClick={handleAddManualEntry}>
-                            + Add Recipient
-                          </button>
-                        </div>
-                      </div>
-                      <div className="card-body p-0">
-                        {manualEntries.length === 0 ? (
-                          <div className="text-muted text-center py-4">
-                            No recipients added. Click "Add Recipient" to start.
-                          </div>
-                        ) : (
-                          <div
-                            className="table-responsive"
-                            style={{
-                              maxHeight: '500px',
-                              overflow: 'auto',
-                            }}
-                          >
-                            <table className="table table-sm table-hover mb-0">
-                              <thead className="table-light sticky-top">
-                                <tr>
-                                  <th style={{ width: '40px' }}>#</th>
-                                  <th style={{ minWidth: '200px' }}>
-                                    Recipient <span className="text-danger">*</span>
-                                  </th>
-                                  <th style={{ minWidth: '180px' }}>CC</th>
-                                  {bulkTemplate?.parameters?.map(param => (
-                                    <th key={param} style={{ minWidth: '150px' }}>
-                                      {param} <span className="text-danger">*</span>
-                                    </th>
-                                  ))}
-                                  <th style={{ width: '140px' }}>Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {manualEntries.map((entry, index) => (
-                                  <tr key={index}>
-                                    <td className="align-middle">{index + 1}</td>
-                                    <td>
-                                      <input
-                                        type="text"
-                                        className="form-control form-control-sm"
-                                        value={entry.recipient}
-                                        onChange={e =>
-                                          handleManualEntryChange(
-                                            index,
-                                            'recipient',
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="user@example.com"
-                                      />
-                                    </td>
-                                    <td>
-                                      <input
-                                        type="text"
-                                        className="form-control form-control-sm"
-                                        value={entry.cc}
-                                        onChange={e =>
-                                          handleManualEntryChange(index, 'cc', e.target.value)
-                                        }
-                                        placeholder="cc@example.com"
-                                      />
-                                    </td>
-                                    {bulkTemplate?.parameters?.map(param => (
-                                      <td key={param}>
-                                        <input
-                                          type="text"
-                                          className="form-control form-control-sm"
-                                          value={entry[param] || ''}
-                                          onChange={e =>
-                                            handleManualEntryChange(index, param, e.target.value)
-                                          }
-                                          placeholder={`Enter ${param}`}
-                                        />
-                                      </td>
-                                    ))}
-                                    <td className="align-middle">
-                                      <button
-                                        className="btn btn-sm btn-outline-primary me-1"
-                                        onClick={() => setPreviewIndex(index)}
-                                        title="Preview"
-                                      >
-                                        Preview
-                                      </button>
-                                      <button
-                                        className="btn btn-sm btn-outline-danger"
-                                        onClick={() => handleRemoveManualEntry(index)}
-                                        title="Remove"
-                                      >
-                                        ✕
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {csvErrors.length > 0 && bulkInputMode === 'csv' && (
-                    <div className="alert alert-danger">
-                      <h6 className="alert-heading">CSV Validation Errors ({csvErrors.length})</h6>
-                      <ul className="mb-0" style={{ maxHeight: '200px', overflow: 'auto' }}>
-                        {csvErrors.map((error, index) => (
-                          <li key={index}>{error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {bulkInputMode === 'csv' && csvData.length > 0 && csvErrors.length === 0 && (
-                    <div className="card mb-3">
-                      <div className="card-header d-flex justify-content-between align-items-center">
-                        <h5 className="mb-0">4. Review Data ({csvData.length} records)</h5>
+              {bulkTemplate && bulkInputMode === 'manual' && (
+                <div className="card mb-3">
+                  <div className="card-header d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">
+                      3. Enter Recipients Manually
+                      {manualEntries.length > 0 && (
+                        <span className="text-muted ms-2">
+                          ({manualEntries.length} recipient
+                          {manualEntries.length !== 1 ? 's' : ''})
+                        </span>
+                      )}
+                    </h5>
+                    <div>
+                      {manualEntries.length > 0 && (
                         <button
-                          className="btn btn-success"
+                          className="btn btn-sm btn-success me-2"
                           onClick={handleBulkSend}
                           disabled={sending}
                         >
@@ -882,58 +766,185 @@ function SendEmail() {
                               Sending...
                             </>
                           ) : (
-                            `Send ${csvData.length} Emails`
+                            `Send ${manualEntries.length} Email${manualEntries.length !== 1 ? 's' : ''}`
                           )}
                         </button>
-                      </div>
-                      <div className="card-body p-0">
-                        <div
-                          className="table-responsive"
-                          style={{
-                            maxHeight: '500px',
-                            overflow: 'auto',
-                            padding: '0px 5px',
-                          }}
-                        >
-                          <table className="table table-sm table-hover mb-0">
-                            <thead className="table-light sticky-top">
-                              <tr>
-                                <th style={{ width: '50px' }}>#</th>
-                                <th>Recipient</th>
-                                <th>CC</th>
-                                {bulkTemplate?.parameters?.map(param => (
-                                  <th key={param}>{param}</th>
-                                ))}
-                                <th style={{ width: '100px' }}>Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {csvData.map((row, index) => (
-                                <tr key={index}>
-                                  <td>{index + 1}</td>
-                                  <td>{row.recipient}</td>
-                                  <td>{row.cc || '-'}</td>
-                                  {bulkTemplate?.parameters?.map(param => (
-                                    <td key={param}>{row[param]}</td>
-                                  ))}
-                                  <td>
-                                    <button
-                                      className="btn btn-sm btn-outline-primary"
-                                      onClick={() => setPreviewIndex(index)}
-                                    >
-                                      Preview
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                      )}
+                      <button className="btn btn-sm btn-primary" onClick={handleAddManualEntry}>
+                        + Add Recipient
+                      </button>
                     </div>
-                  )}
+                  </div>
+                  <div className="card-body p-0">
+                    {manualEntries.length === 0 ? (
+                      <div className="text-muted text-center py-4">
+                        No recipients added. Click "Add Recipient" to start.
+                      </div>
+                    ) : (
+                      <div
+                        className="table-responsive"
+                        style={{
+                          maxHeight: '500px',
+                          overflow: 'auto',
+                        }}
+                      >
+                        <table className="table table-sm table-hover mb-0">
+                          <thead className="table-light sticky-top">
+                            <tr>
+                              <th style={{ width: '40px' }}>#</th>
+                              <th style={{ minWidth: '200px' }}>
+                                Recipient <span className="text-danger">*</span>
+                              </th>
+                              <th style={{ minWidth: '180px' }}>CC</th>
+                              {bulkTemplate?.parameters?.map(param => (
+                                <th key={param} style={{ minWidth: '150px' }}>
+                                  {param} <span className="text-danger">*</span>
+                                </th>
+                              ))}
+                              <th style={{ width: '140px' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {manualEntries.map((entry, index) => (
+                              <tr key={index}>
+                                <td className="align-middle">{index + 1}</td>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    value={entry.recipient}
+                                    onChange={e =>
+                                      handleManualEntryChange(index, 'recipient', e.target.value)
+                                    }
+                                    placeholder="user@example.com"
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    value={entry.cc}
+                                    onChange={e =>
+                                      handleManualEntryChange(index, 'cc', e.target.value)
+                                    }
+                                    placeholder="cc@example.com"
+                                  />
+                                </td>
+                                {bulkTemplate?.parameters?.map(param => (
+                                  <td key={param}>
+                                    <input
+                                      type="text"
+                                      className="form-control form-control-sm"
+                                      value={entry[param] || ''}
+                                      onChange={e =>
+                                        handleManualEntryChange(index, param, e.target.value)
+                                      }
+                                      placeholder={`Enter ${param}`}
+                                    />
+                                  </td>
+                                ))}
+                                <td className="align-middle">
+                                  <button
+                                    className="btn btn-sm btn-outline-primary me-1"
+                                    onClick={() => setPreviewIndex(index)}
+                                    title="Preview"
+                                  >
+                                    Preview
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleRemoveManualEntry(index)}
+                                    title="Remove"
+                                  >
+                                    ✕
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {csvErrors.length > 0 && bulkInputMode === 'csv' && (
+                <div className="alert alert-danger">
+                  <h6 className="alert-heading">CSV Validation Errors ({csvErrors.length})</h6>
+                  <ul className="mb-0" style={{ maxHeight: '200px', overflow: 'auto' }}>
+                    {csvErrors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {bulkInputMode === 'csv' && csvData.length > 0 && csvErrors.length === 0 && (
+                <div className="card mb-3">
+                  <div className="card-header d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">4. Review Data ({csvData.length} records)</h5>
+                    <button className="btn btn-success" onClick={handleBulkSend} disabled={sending}>
+                      {sending ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          ></span>
+                          Sending...
+                        </>
+                      ) : (
+                        `Send ${csvData.length} Emails`
+                      )}
+                    </button>
+                  </div>
+                  <div className="card-body p-0">
+                    <div
+                      className="table-responsive"
+                      style={{
+                        maxHeight: '500px',
+                        overflow: 'auto',
+                        padding: '0px 5px',
+                      }}
+                    >
+                      <table className="table table-sm table-hover mb-0">
+                        <thead className="table-light sticky-top">
+                          <tr>
+                            <th style={{ width: '50px' }}>#</th>
+                            <th>Recipient</th>
+                            <th>CC</th>
+                            {bulkTemplate?.parameters?.map(param => (
+                              <th key={param}>{param}</th>
+                            ))}
+                            <th style={{ width: '100px' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {csvData.map((row, index) => (
+                            <tr key={index}>
+                              <td>{index + 1}</td>
+                              <td>{row.recipient}</td>
+                              <td>{row.cc || '-'}</td>
+                              {bulkTemplate?.parameters?.map(param => (
+                                <td key={param}>{row[param]}</td>
+                              ))}
+                              <td>
+                                <button
+                                  className="btn btn-sm btn-outline-primary"
+                                  onClick={() => setPreviewIndex(index)}
+                                >
+                                  Preview
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Preview Modal */}
               {previewIndex !== null &&

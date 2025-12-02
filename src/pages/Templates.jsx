@@ -58,6 +58,19 @@ function Templates() {
 
   const handleSave = async templateData => {
     try {
+      // Check for duplicate template name
+      const isDuplicate = templates.some(
+        t =>
+          t.name.toLowerCase() === templateData.name.toLowerCase() && t.id !== editingTemplate?.id
+      )
+
+      if (isDuplicate) {
+        alert(
+          `A template with the name "${templateData.name}" already exists. Please choose a different name.`
+        )
+        return
+      }
+
       if (editingTemplate) {
         // Update existing template
         await updateTemplate(editingTemplate.id, templateData)
