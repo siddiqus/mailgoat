@@ -5,24 +5,55 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .js,.jsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint src --ext .js,.jsx --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,json,css,md}\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "email",
+    "template",
+    "bulk-email",
+    "webhook"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "description": "Email template management and bulk sending tool",
   "dependencies": {
     "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
+    "dompurify": "^3.3.0",
+    "lodash": "^4.17.21",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
-    "uuid": "^13.0.0"
+    "react-toastify": "^11.0.5",
+    "uuid": "^13.0.0",
+    "validator": "^13.15.23"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/dompurify": "^3.0.5",
     "@types/papaparse": "^5.5.1",
     "@vitejs/plugin-react": "^5.1.1",
-    "vite": "^7.2.6"
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "jsdom": "^27.2.0",
+    "prettier": "^3.7.3",
+    "vite": "^7.2.6",
+    "vitest": "^4.0.15"
   }
 }

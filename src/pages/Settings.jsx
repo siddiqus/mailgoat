@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { testWebhook } from '../services/emailService'
 
@@ -14,7 +14,7 @@ function Settings() {
     recipients: 'recipients',
     ccList: 'ccList',
     subject: 'subject',
-    htmlBody: 'htmlBody'
+    htmlBody: 'htmlBody',
   })
 
   useEffect(() => {
@@ -28,12 +28,14 @@ function Settings() {
       setSettings(data)
       setWebhookUrl(data.webhook.url || '')
       setWebhookHeaders(data.webhook.headers || [])
-      setBodyMapping(data.webhook.bodyMapping || {
-        recipients: 'recipients',
-        ccList: 'ccList',
-        subject: 'subject',
-        htmlBody: 'htmlBody'
-      })
+      setBodyMapping(
+        data.webhook.bodyMapping || {
+          recipients: 'recipients',
+          ccList: 'ccList',
+          subject: 'subject',
+          htmlBody: 'htmlBody',
+        }
+      )
     } catch (error) {
       console.error('Error loading settings:', error)
       alert('Failed to load settings')
@@ -46,7 +48,7 @@ function Settings() {
     setWebhookHeaders([...webhookHeaders, { key: '', value: '' }])
   }
 
-  const handleRemoveHeader = (index) => {
+  const handleRemoveHeader = index => {
     const newHeaders = webhookHeaders.filter((_, i) => i !== index)
     setWebhookHeaders(newHeaders)
   }
@@ -60,7 +62,7 @@ function Settings() {
   const handleBodyMappingChange = (field, value) => {
     setBodyMapping({
       ...bodyMapping,
-      [field]: value
+      [field]: value,
     })
   }
 
@@ -85,8 +87,8 @@ function Settings() {
         webhook: {
           url: webhookUrl,
           headers: webhookHeaders.filter(h => h.key.trim() !== ''),
-          bodyMapping: bodyMapping
-        }
+          bodyMapping: bodyMapping,
+        },
       }
 
       await settingsRepository.saveSettings(updatedSettings)
@@ -155,7 +157,7 @@ function Settings() {
                   type="url"
                   className="form-control"
                   value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  onChange={e => setWebhookUrl(e.target.value)}
                   placeholder="https://api.example.com/send-email"
                 />
                 <div className="form-text">
@@ -167,8 +169,8 @@ function Settings() {
               <div className="mb-4">
                 <label className="form-label fw-bold">Request Body Property Mapping</label>
                 <div className="form-text mb-3">
-                  Configure the property names that will be sent in the webhook request body.
-                  Enter the desired property name for each email field.
+                  Configure the property names that will be sent in the webhook request body. Enter
+                  the desired property name for each email field.
                 </div>
 
                 <div className="row g-3">
@@ -181,7 +183,7 @@ function Settings() {
                       type="text"
                       className="form-control font-monospace"
                       value={bodyMapping.recipients}
-                      onChange={(e) => handleBodyMappingChange('recipients', e.target.value)}
+                      onChange={e => handleBodyMappingChange('recipients', e.target.value)}
                       placeholder="recipients"
                     />
                   </div>
@@ -194,7 +196,7 @@ function Settings() {
                       type="text"
                       className="form-control font-monospace"
                       value={bodyMapping.ccList}
-                      onChange={(e) => handleBodyMappingChange('ccList', e.target.value)}
+                      onChange={e => handleBodyMappingChange('ccList', e.target.value)}
                       placeholder="ccList"
                     />
                   </div>
@@ -207,7 +209,7 @@ function Settings() {
                       type="text"
                       className="form-control font-monospace"
                       value={bodyMapping.subject}
-                      onChange={(e) => handleBodyMappingChange('subject', e.target.value)}
+                      onChange={e => handleBodyMappingChange('subject', e.target.value)}
                       placeholder="subject"
                     />
                   </div>
@@ -220,7 +222,7 @@ function Settings() {
                       type="text"
                       className="form-control font-monospace"
                       value={bodyMapping.htmlBody}
-                      onChange={(e) => handleBodyMappingChange('htmlBody', e.target.value)}
+                      onChange={e => handleBodyMappingChange('htmlBody', e.target.value)}
                       placeholder="htmlBody"
                     />
                   </div>
@@ -228,23 +230,40 @@ function Settings() {
 
                 <div className="mt-3">
                   <details className="text-muted small">
-                    <summary className="cursor-pointer" style={{ cursor: 'pointer' }}>How does property mapping work?</summary>
+                    <summary className="cursor-pointer" style={{ cursor: 'pointer' }}>
+                      How does property mapping work?
+                    </summary>
                     <div className="mt-2 ps-3">
-                      <p>The property mapping allows you to customize the JSON property names sent to your webhook.</p>
-                      <p><strong>Example:</strong></p>
+                      <p>
+                        The property mapping allows you to customize the JSON property names sent to
+                        your webhook.
+                      </p>
+                      <p>
+                        <strong>Example:</strong>
+                      </p>
                       <p>If you want to send data in this format:</p>
-                      <pre className="bg-light p-2 rounded"><code>{`{
+                      <pre className="bg-light p-2 rounded">
+                        <code>{`{
   "to": ["user@example.com"],
   "cc": ["cc@example.com"],
   "email_subject": "Hello",
   "html_content": "<p>Email body</p>"
-}`}</code></pre>
+}`}</code>
+                      </pre>
                       <p>Set the property mappings to:</p>
                       <ul className="mb-0">
-                        <li>Recipients Property Name: <code>to</code></li>
-                        <li>CC List Property Name: <code>cc</code></li>
-                        <li>Subject Property Name: <code>email_subject</code></li>
-                        <li>HTML Body Property Name: <code>html_content</code></li>
+                        <li>
+                          Recipients Property Name: <code>to</code>
+                        </li>
+                        <li>
+                          CC List Property Name: <code>cc</code>
+                        </li>
+                        <li>
+                          Subject Property Name: <code>email_subject</code>
+                        </li>
+                        <li>
+                          HTML Body Property Name: <code>html_content</code>
+                        </li>
                       </ul>
                     </div>
                   </details>
@@ -264,7 +283,8 @@ function Settings() {
                   </button>
                 </div>
                 <div className="form-text mb-3">
-                  Add custom HTTP headers to be sent with each request (e.g., Authorization, API-Key)
+                  Add custom HTTP headers to be sent with each request (e.g., Authorization,
+                  API-Key)
                 </div>
 
                 {webhookHeaders.length === 0 ? (
@@ -280,7 +300,7 @@ function Settings() {
                             type="text"
                             className="form-control form-control-sm"
                             value={header.key}
-                            onChange={(e) => handleHeaderChange(index, 'key', e.target.value)}
+                            onChange={e => handleHeaderChange(index, 'key', e.target.value)}
                             placeholder="Header Name (e.g., Authorization)"
                           />
                         </div>
@@ -289,7 +309,7 @@ function Settings() {
                             type="text"
                             className="form-control form-control-sm"
                             value={header.value}
-                            onChange={(e) => handleHeaderChange(index, 'value', e.target.value)}
+                            onChange={e => handleHeaderChange(index, 'value', e.target.value)}
                             placeholder="Header Value"
                           />
                         </div>
@@ -310,14 +330,14 @@ function Settings() {
 
               {/* Action Buttons */}
               <div className="d-flex gap-2">
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSave}
-                  disabled={saving}
-                >
+                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
                   {saving ? (
                     <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
                       Saving...
                     </>
                   ) : (
@@ -347,7 +367,10 @@ function Settings() {
 
               <div className="mb-3">
                 <strong className="small">URL:</strong>
-                <pre className="bg-light p-2 rounded mt-1 small mb-0" style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>
+                <pre
+                  className="bg-light p-2 rounded mt-1 small mb-0"
+                  style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}
+                >
                   {webhookUrl || 'Not configured'}
                 </pre>
               </div>
@@ -355,12 +378,13 @@ function Settings() {
               {webhookHeaders.length > 0 && (
                 <div className="mb-3">
                   <strong className="small">Headers:</strong>
-                  <pre className="bg-light p-2 rounded mt-1 small mb-0" style={{ fontSize: '0.75rem' }}>
+                  <pre
+                    className="bg-light p-2 rounded mt-1 small mb-0"
+                    style={{ fontSize: '0.75rem' }}
+                  >
                     {JSON.stringify(
                       Object.fromEntries(
-                        webhookHeaders
-                          .filter(h => h.key.trim() !== '')
-                          .map(h => [h.key, h.value])
+                        webhookHeaders.filter(h => h.key.trim() !== '').map(h => [h.key, h.value])
                       ),
                       null,
                       2
@@ -371,13 +395,16 @@ function Settings() {
 
               <div>
                 <strong className="small">Body Structure:</strong>
-                <pre className="bg-light p-2 rounded mt-1 small mb-0" style={{ fontSize: '0.75rem', maxHeight: '300px', overflow: 'auto' }}>
+                <pre
+                  className="bg-light p-2 rounded mt-1 small mb-0"
+                  style={{ fontSize: '0.75rem', maxHeight: '300px', overflow: 'auto' }}
+                >
                   {JSON.stringify(
                     {
                       [bodyMapping.recipients || 'recipients']: ['email@example.com'],
                       [bodyMapping.ccList || 'ccList']: ['cc@example.com'],
                       [bodyMapping.subject || 'subject']: 'Email subject',
-                      [bodyMapping.htmlBody || 'htmlBody']: '<p>Email content</p>'
+                      [bodyMapping.htmlBody || 'htmlBody']: '<p>Email content</p>',
                     },
                     null,
                     2

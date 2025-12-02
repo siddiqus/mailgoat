@@ -1,5 +1,5 @@
-import ITemplateRepository from './ITemplateRepository'
 import { v4 as uuidv4 } from 'uuid'
+import ITemplateRepository from './ITemplateRepository'
 
 /**
  * LocalStorage implementation of the Template Repository
@@ -45,7 +45,7 @@ class LocalStorageTemplateRepository extends ITemplateRepository {
       ...template,
       id: this._generateId(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     }
     templates.push(newTemplate)
     this._save(templates)
@@ -70,7 +70,7 @@ class LocalStorageTemplateRepository extends ITemplateRepository {
       ...templates[index],
       ...template,
       id, // Preserve the original ID
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     }
 
     templates[index] = updatedTemplate

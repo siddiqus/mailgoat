@@ -31,7 +31,7 @@ export function validateHTML(htmlString) {
   if (!htmlString || htmlString.trim() === '') {
     return {
       isValid: false,
-      errors: ['HTML string cannot be empty']
+      errors: ['HTML string cannot be empty'],
     }
   }
 
@@ -40,7 +40,9 @@ export function validateHTML(htmlString) {
   const closeBrackets = (htmlString.match(/\}\}/g) || []).length
 
   if (openBrackets !== closeBrackets) {
-    errors.push(`Unmatched template brackets: ${openBrackets} opening {{ but ${closeBrackets} closing }}`)
+    errors.push(
+      `Unmatched template brackets: ${openBrackets} opening {{ but ${closeBrackets} closing }}`
+    )
   }
 
   // Check for malformed template syntax (e.g., {{{ or }}}})
@@ -57,7 +59,7 @@ export function validateHTML(htmlString) {
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   }
 }
 
@@ -69,8 +71,20 @@ export function validateHTML(htmlString) {
 function validateHTMLTags(htmlString) {
   const errors = []
   const selfClosingTags = new Set([
-    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-    'link', 'meta', 'param', 'source', 'track', 'wbr'
+    'area',
+    'base',
+    'br',
+    'col',
+    'embed',
+    'hr',
+    'img',
+    'input',
+    'link',
+    'meta',
+    'param',
+    'source',
+    'track',
+    'wbr',
   ])
 
   // Remove template parameters temporarily to avoid confusion
@@ -92,7 +106,9 @@ function validateHTMLTags(htmlString) {
       } else {
         const lastOpened = stack.pop()
         if (lastOpened !== tagName) {
-          errors.push(`Tag mismatch: expected closing tag for <${lastOpened}> but found </${tagName}>`)
+          errors.push(
+            `Tag mismatch: expected closing tag for <${lastOpened}> but found </${tagName}>`
+          )
         }
       }
     }
@@ -114,7 +130,7 @@ function validateHTMLTags(htmlString) {
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   }
 }
 

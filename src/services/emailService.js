@@ -1,7 +1,7 @@
-import LocalStorageSettingsRepository from "../repositories/LocalStorageSettingsRepository";
-import axios from "axios";
+import axios from 'axios'
+import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 
-const settingsRepository = new LocalStorageSettingsRepository();
+const settingsRepository = new LocalStorageSettingsRepository()
 
 /**
  * Apply body mapping to email data based on webhook configuration
@@ -10,91 +10,106 @@ const settingsRepository = new LocalStorageSettingsRepository();
  * @returns {Object} Mapped email data
  */
 export const applyBodyMapping = (emailData, bodyMapping) => {
-  const mappedBody = {};
+  const mappedBody = {}
 
   // Map each email field to its configured property name
   if (bodyMapping.recipients && bodyMapping.recipients.length > 0) {
-    mappedBody[bodyMapping.recipients] = emailData.recipients.join(";");
+    mappedBody[bodyMapping.recipients] = emailData.recipients.join(';')
   } else {
-    throw new Error("No recipients provided");
+    throw new Error('No recipients provided')
   }
   if (bodyMapping.ccList && bodyMapping.ccList.length > 0) {
-    mappedBody[bodyMapping.ccList] = emailData.ccList.join(";");
+    mappedBody[bodyMapping.ccList] = emailData.ccList.join(';')
   } else {
-    mappedBody[bodyMapping.ccList] = "";
+    mappedBody[bodyMapping.ccList] = ''
   }
   if (bodyMapping.subject) {
-    mappedBody[bodyMapping.subject] = emailData.subject;
+    mappedBody[bodyMapping.subject] = emailData.subject
   }
   if (bodyMapping.htmlBody) {
-    mappedBody[bodyMapping.htmlBody] =
-      emailData.htmlBody || emailData.htmlString;
+    mappedBody[bodyMapping.htmlBody] = emailData.htmlBody || emailData.htmlString
   }
 
-  return mappedBody;
-};
+  return mappedBody
+}
 
 /**
  * Send a single email using configured webhook
  * @param {Object} emailData - Email data with recipients, ccList, subject, htmlBody
+ * @param {AbortSignal} signal - Optional abort signal for cancellation
  * @returns {Promise<Object>} Response from webhook
  */
-export const sendSingleEmail = async (emailData) => {
+export const sendSingleEmail = async (emailData, signal = null) => {
   // Load webhook settings
-  const settings = await settingsRepository.getSettings();
+  const settings = await settingsRepository.getSettings()
 
   if (!settings.webhook.url) {
-    throw new Error(
-      "Webhook URL not configured. Please configure it in Settings."
-    );
+    throw new Error('Webhook URL not configured. Please configure it in Settings.')
   }
 
   // Apply body mapping from settings
-  const mappedBody = applyBodyMapping(emailData, settings.webhook.bodyMapping);
+  const mappedBody = applyBodyMapping(emailData, settings.webhook.bodyMapping)
 
   // Prepare headers
   const headers = {
-    "Content-Type": "application/json",
-  };
+    'Content-Type': 'application/json',
+  }
 
   // Add custom headers from settings
-  settings.webhook.headers.forEach((header) => {
-    if (header.key.trim() !== "") {
-      headers[header.key] = header.value;
+  settings.webhook.headers.forEach(header => {
+    if (header.key.trim() !== '') {
+      headers[header.key] = header.value
     }
-  });
+  })
 
-  await axios.post(settings.webhook.url, mappedBody, {
+  const config = {
     headers,
-  });
-};
+    timeout: 30000, // 30 second timeout
+  }
+
+  if (signal) {
+    config.signal = signal
+  }
+
+  const response = await axios.post(settings.webhook.url, mappedBody, config)
+  return response.data
+}
 
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 /**
  * Send bulk emails using configured webhook
  * @param {Array<Object>} bulkEmailData - Array of email data objects
+ * @param {AbortSignal} signal - Optional abort signal for cancellation
  * @returns {Promise<Object>} Response from webhook
  */
-export const sendBulkEmails = async (bulkEmailData) => {
+export const sendBulkEmails = async (bulkEmailData, signal = null) => {
   const results = {
     success: [],
     failures: [],
-  };
+  }
   for (const emailData of bulkEmailData) {
+    // Check if operation was cancelled
+    if (signal && signal.aborted) {
+      throw new Error('Operation cancelled')
+    }
+
     try {
-      await sendSingleEmail(emailData);
-      results.success.push(emailData.recipients);
-      await sleep(1000);
+      await sendSingleEmail(emailData, signal)
+      results.success.push(emailData.recipients)
+      await sleep(1000)
     } catch (error) {
-      results.failures.push(emailData.recipients);
+      if (error.name === 'CanceledError' || error.message === 'Operation cancelled') {
+        throw error // Re-throw cancellation errors
+      }
+      results.failures.push(emailData.recipients)
     }
   }
 
-  return results;
-};
+  return results
+}
 
 /**
  * Test webhook with sample data
@@ -105,35 +120,35 @@ export const sendBulkEmails = async (bulkEmailData) => {
  */
 export const testWebhook = async (webhookUrl, webhookHeaders, bodyMapping) => {
   const testPayload = {
-    recipients: ["test@example.com"],
-    ccList: ["cc@example.com"],
-    subject: "Test Email Subject",
-    htmlBody: "<p>This is a test email body</p>",
-  };
+    recipients: ['test@example.com'],
+    ccList: ['cc@example.com'],
+    subject: 'Test Email Subject',
+    htmlBody: '<p>This is a test email body</p>',
+  }
 
   // Apply body mapping
-  const mappedBody = applyBodyMapping(testPayload, bodyMapping);
+  const mappedBody = applyBodyMapping(testPayload, bodyMapping)
 
   const headers = {
-    "Content-Type": "application/json",
-  };
+    'Content-Type': 'application/json',
+  }
 
   // Add custom headers
-  webhookHeaders.forEach((header) => {
-    if (header.key.trim() !== "") {
-      headers[header.key] = header.value;
+  webhookHeaders.forEach(header => {
+    if (header.key.trim() !== '') {
+      headers[header.key] = header.value
     }
-  });
+  })
 
   const response = await fetch(webhookUrl, {
-    method: "POST",
+    method: 'POST',
     headers: headers,
     body: JSON.stringify(mappedBody),
-  });
+  })
 
   return {
     ok: response.ok,
     status: response.status,
     data: response.ok ? await response.json() : null,
-  };
-};
+  }
+}

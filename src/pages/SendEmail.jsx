@@ -1,427 +1,388 @@
-import React, { useState, useEffect } from "react";
-import { sendSingleEmail, sendBulkEmails } from "../services/emailService";
+import { useState, useEffect } from 'react'
+import { validateCSVData, parseCSVFile, prepareBulkEmailData } from '../services/csvService'
+import { sendSingleEmail, sendBulkEmails } from '../services/emailService'
+import { getAllTemplates } from '../services/templateRepositoryService'
 import {
   replaceParameters,
   parseEmailList,
   prepareEmailFromTemplate,
   generateSampleCSV,
   downloadCSV,
-} from "../services/templateService";
-import {
-  validateCSVData,
-  parseCSVFile,
-  prepareBulkEmailData,
-} from "../services/csvService";
-import { getAllTemplates } from "../services/templateRepositoryService";
+} from '../services/templateService'
+import { validateEmailList } from '../utils/emailValidator'
+import { sanitizeHtml } from '../utils/sanitizer'
 
 function SendEmail() {
-  const [activeTab, setActiveTab] = useState("single");
-  const [templates, setTemplates] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [activeTab, setActiveTab] = useState('single')
+  const [templates, setTemplates] = useState([])
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
 
   // Single email state
-  const [parameterValues, setParameterValues] = useState({});
-  const [recipients, setRecipients] = useState("");
-  const [ccList, setCcList] = useState("");
-  const [subject, setSubject] = useState("");
-  const [htmlBody, setHtmlBody] = useState("");
-  const [recipientsError, setRecipientsError] = useState("");
-  const [ccListError, setCcListError] = useState("");
+  const [parameterValues, setParameterValues] = useState({})
+  const [recipients, setRecipients] = useState('')
+  const [ccList, setCcList] = useState('')
+  const [subject, setSubject] = useState('')
+  const [htmlBody, setHtmlBody] = useState('')
+  const [recipientsError, setRecipientsError] = useState('')
+  const [ccListError, setCcListError] = useState('')
 
   // Bulk email state
-  const [bulkTemplate, setBulkTemplate] = useState(null);
-  const [bulkInputMode, setBulkInputMode] = useState("csv"); // 'csv' or 'manual'
-  const [csvFile, setCsvFile] = useState(null);
-  const [csvData, setCsvData] = useState([]);
-  const [csvErrors, setCsvErrors] = useState([]);
-  const [previewIndex, setPreviewIndex] = useState(null);
+  const [bulkTemplate, setBulkTemplate] = useState(null)
+  const [bulkInputMode, setBulkInputMode] = useState('csv') // 'csv' or 'manual'
+  const [csvFile, setCsvFile] = useState(null)
+  const [csvData, setCsvData] = useState([])
+  const [csvErrors, setCsvErrors] = useState([])
+  const [previewIndex, setPreviewIndex] = useState(null)
 
   // Manual bulk entry state
-  const [manualEntries, setManualEntries] = useState([]);
+  const [manualEntries, setManualEntries] = useState([])
 
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
 
   // Load templates on mount
   useEffect(() => {
-    loadTemplates();
-  }, []);
+    loadTemplates()
+  }, [])
 
   const loadTemplates = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const data = await getAllTemplates();
-      setTemplates(data);
+      const data = await getAllTemplates()
+      setTemplates(data)
     } catch (error) {
-      console.error("Error loading templates:", error);
-      alert("Failed to load templates");
+      console.error('Error loading templates:', error)
+      alert('Failed to load templates')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // Update preview when template or parameters change
   useEffect(() => {
     if (selectedTemplate) {
-      const { subject: newSubject, htmlBody: newHtmlBody } =
-        prepareEmailFromTemplate(selectedTemplate, parameterValues);
+      const { subject: newSubject, htmlBody: newHtmlBody } = prepareEmailFromTemplate(
+        selectedTemplate,
+        parameterValues
+      )
       // Only auto-update subject if user hasn't manually edited it
       // We'll set it initially, but allow manual edits
-      setSubject(newSubject);
-      setHtmlBody(newHtmlBody);
+      setSubject(newSubject)
+      setHtmlBody(newHtmlBody)
     } else {
-      setSubject("");
-      setHtmlBody("");
+      setSubject('')
+      setHtmlBody('')
     }
-  }, [selectedTemplate, parameterValues]);
+  }, [selectedTemplate, parameterValues])
 
-  const handleTemplateSelect = (template) => {
-    setSelectedTemplate(template);
+  const handleTemplateSelect = template => {
+    setSelectedTemplate(template)
     // Initialize parameter values
-    const initialValues = {};
+    const initialValues = {}
     if (template.parameters) {
-      template.parameters.forEach((param) => {
-        initialValues[param] = "";
-      });
+      template.parameters.forEach(param => {
+        initialValues[param] = ''
+      })
     }
-    setParameterValues(initialValues);
-  };
+    setParameterValues(initialValues)
+  }
 
   const handleParameterChange = (paramName, value) => {
-    setParameterValues((prev) => ({
+    setParameterValues(prev => ({
       ...prev,
       [paramName]: value,
-    }));
-  };
+    }))
+  }
 
-  // Email validation function
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // Validate email list (comma or semicolon separated)
-  const validateEmailList = (emailString) => {
-    if (!emailString || !emailString.trim()) {
-      return { isValid: true, invalidEmails: [] };
-    }
-
-    const emails = parseEmailList(emailString);
-    const invalidEmails = emails.filter((email) => !validateEmail(email));
-
-    return {
-      isValid: invalidEmails.length === 0,
-      invalidEmails,
-    };
-  };
-
-  const handleRecipientsChange = (value) => {
-    setRecipients(value);
+  const handleRecipientsChange = value => {
+    setRecipients(value)
 
     if (value.trim()) {
-      const validation = validateEmailList(value);
+      const validation = validateEmailList(value)
       if (!validation.isValid) {
-        setRecipientsError(
-          `Invalid email(s): ${validation.invalidEmails.join(", ")}`
-        );
+        setRecipientsError(`Invalid email(s): ${validation.invalidEmails.join(', ')}`)
       } else {
-        setRecipientsError("");
+        setRecipientsError('')
       }
     } else {
-      setRecipientsError("");
+      setRecipientsError('')
     }
-  };
+  }
 
-  const handleCcListChange = (value) => {
-    setCcList(value);
+  const handleCcListChange = value => {
+    setCcList(value)
 
     if (value.trim()) {
-      const validation = validateEmailList(value);
+      const validation = validateEmailList(value)
       if (!validation.isValid) {
-        setCcListError(
-          `Invalid email(s): ${validation.invalidEmails.join(", ")}`
-        );
+        setCcListError(`Invalid email(s): ${validation.invalidEmails.join(', ')}`)
       } else {
-        setCcListError("");
+        setCcListError('')
       }
     } else {
-      setCcListError("");
+      setCcListError('')
     }
-  };
+  }
 
   const handleSendEmail = async () => {
     // Validate inputs
     if (!recipients.trim()) {
-      alert("Please enter at least one recipient email address");
-      return;
+      alert('Please enter at least one recipient email address')
+      return
     }
 
     // Validate recipients
-    const recipientsValidation = validateEmailList(recipients);
+    const recipientsValidation = validateEmailList(recipients)
     if (!recipientsValidation.isValid) {
-      alert(
-        `Invalid recipient email(s): ${recipientsValidation.invalidEmails.join(
-          ", "
-        )}`
-      );
-      return;
+      alert(`Invalid recipient email(s): ${recipientsValidation.invalidEmails.join(', ')}`)
+      return
     }
 
     // Validate CC list if provided
     if (ccList.trim()) {
-      const ccValidation = validateEmailList(ccList);
+      const ccValidation = validateEmailList(ccList)
       if (!ccValidation.isValid) {
-        alert(`Invalid CC email(s): ${ccValidation.invalidEmails.join(", ")}`);
-        return;
+        alert(`Invalid CC email(s): ${ccValidation.invalidEmails.join(', ')}`)
+        return
       }
     }
 
     if (!subject.trim()) {
-      alert("Please enter a subject");
-      return;
+      alert('Please enter a subject')
+      return
     }
 
     if (!htmlBody.trim()) {
-      alert("Email body cannot be empty");
-      return;
+      alert('Email body cannot be empty')
+      return
     }
 
     // Check if any parameters are still unfilled
     const hasUnfilledParams = selectedTemplate?.parameters?.some(
-      (param) => !parameterValues[param] || parameterValues[param].trim() === ""
-    );
+      param => !parameterValues[param] || parameterValues[param].trim() === ''
+    )
     if (hasUnfilledParams) {
-      const confirmSend = window.confirm(
-        "Some parameters are not filled. Do you want to continue?"
-      );
-      if (!confirmSend) return;
+      const confirmSend = window.confirm('Some parameters are not filled. Do you want to continue?')
+      if (!confirmSend) return
     }
 
-    setSending(true);
+    setSending(true)
     try {
       // Parse recipients and CC list
-      const recipientList = parseEmailList(recipients);
-      const ccListArray = parseEmailList(ccList);
+      const recipientList = parseEmailList(recipients)
+      const ccListArray = parseEmailList(ccList)
 
       const emailData = {
         recipients: recipientList,
         ccList: ccListArray,
         subject,
         htmlBody,
-      };
+      }
 
       try {
-        await sendSingleEmail(emailData);
-        alert("Email sent successfully!");
+        await sendSingleEmail(emailData)
+        alert('Email sent successfully!')
 
         // Reset form
-        setSelectedTemplate(null);
-        setParameterValues({});
-        setRecipients("");
-        setCcList("");
-        setRecipientsError("");
-        setCcListError("");
+        setSelectedTemplate(null)
+        setParameterValues({})
+        setRecipients('')
+        setCcList('')
+        setRecipientsError('')
+        setCcListError('')
       } catch (error) {
-        alert(`Error sending email: ${error.message}`);
+        alert(`Error sending email: ${error.message}`)
       }
     } catch (error) {
-      console.error("Error sending email:", error);
-      alert(`Failed to send email: ${error.message}`);
+      console.error('Error sending email:', error)
+      alert(`Failed to send email: ${error.message}`)
     } finally {
-      setSending(false);
+      setSending(false)
     }
-  };
+  }
 
   // Bulk email functions
-  const handleBulkTemplateSelect = (template) => {
-    setBulkTemplate(template);
-    setCsvFile(null);
-    setCsvData([]);
-    setCsvErrors([]);
-    setPreviewIndex(null);
-    setManualEntries([]);
-  };
+  const handleBulkTemplateSelect = template => {
+    setBulkTemplate(template)
+    setCsvFile(null)
+    setCsvData([])
+    setCsvErrors([])
+    setPreviewIndex(null)
+    setManualEntries([])
+  }
 
   const handleAddManualEntry = () => {
     const newEntry = {
-      recipient: "",
-      cc: "",
-    };
+      recipient: '',
+      cc: '',
+    }
 
     // Add empty fields for each parameter
     if (bulkTemplate?.parameters) {
-      bulkTemplate.parameters.forEach((param) => {
-        newEntry[param] = "";
-      });
+      bulkTemplate.parameters.forEach(param => {
+        newEntry[param] = ''
+      })
     }
 
-    setManualEntries([...manualEntries, newEntry]);
-  };
+    setManualEntries([...manualEntries, newEntry])
+  }
 
-  const handleRemoveManualEntry = (index) => {
-    const updated = manualEntries.filter((_, i) => i !== index);
-    setManualEntries(updated);
-  };
+  const handleRemoveManualEntry = index => {
+    const updated = manualEntries.filter((_, i) => i !== index)
+    setManualEntries(updated)
+  }
 
   const handleManualEntryChange = (index, field, value) => {
-    const updated = [...manualEntries];
-    updated[index][field] = value;
-    setManualEntries(updated);
-  };
+    const updated = [...manualEntries]
+    updated[index][field] = value
+    setManualEntries(updated)
+  }
 
   const validateManualEntries = () => {
-    const errors = [];
+    const errors = []
 
     manualEntries.forEach((entry, index) => {
       // Validate recipient
       if (!entry.recipient || !entry.recipient.trim()) {
-        errors.push(`Row ${index + 1}: Recipient is required`);
+        errors.push(`Row ${index + 1}: Recipient is required`)
       } else {
-        const recipientValidation = validateEmailList(entry.recipient);
+        const recipientValidation = validateEmailList(entry.recipient)
         if (!recipientValidation.isValid) {
           errors.push(
-            `Row ${index + 1}: Invalid recipient email(s): ${recipientValidation.invalidEmails.join(", ")}`
-          );
+            `Row ${index + 1}: Invalid recipient email(s): ${recipientValidation.invalidEmails.join(', ')}`
+          )
         }
       }
 
       // Validate CC if provided
       if (entry.cc && entry.cc.trim()) {
-        const ccValidation = validateEmailList(entry.cc);
+        const ccValidation = validateEmailList(entry.cc)
         if (!ccValidation.isValid) {
           errors.push(
-            `Row ${index + 1}: Invalid CC email(s): ${ccValidation.invalidEmails.join(", ")}`
-          );
+            `Row ${index + 1}: Invalid CC email(s): ${ccValidation.invalidEmails.join(', ')}`
+          )
         }
       }
 
       // Validate required parameters
       if (bulkTemplate?.parameters) {
-        bulkTemplate.parameters.forEach((param) => {
+        bulkTemplate.parameters.forEach(param => {
           if (!entry[param] || !entry[param].trim()) {
-            errors.push(`Row ${index + 1}: ${param} is required`);
+            errors.push(`Row ${index + 1}: ${param} is required`)
           }
-        });
+        })
       }
-    });
+    })
 
-    return errors;
-  };
+    return errors
+  }
 
   const handleDownloadSampleCSV = () => {
-    if (!bulkTemplate) return;
+    if (!bulkTemplate) return
 
-    const csvContent = generateSampleCSV(bulkTemplate);
-    downloadCSV(csvContent, `${bulkTemplate.name}_template.csv`);
-  };
+    const csvContent = generateSampleCSV(bulkTemplate)
+    downloadCSV(csvContent, `${bulkTemplate.name}_template.csv`)
+  }
 
-  const handleCSVUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleCSVUpload = async event => {
+    const file = event.target.files[0]
+    if (!file) return
 
-    setCsvFile(file);
-    setCsvErrors([]);
+    setCsvFile(file)
+    setCsvErrors([])
 
     try {
-      const data = await parseCSVFile(file);
-      const errors = validateCSVData(data, bulkTemplate?.parameters);
-      setCsvData(data);
-      setCsvErrors(errors);
+      const data = await parseCSVFile(file)
+      const errors = validateCSVData(data, bulkTemplate?.parameters)
+      setCsvData(data)
+      setCsvErrors(errors)
 
       if (errors.length > 0) {
         alert(
           `CSV validation failed with ${errors.length} error(s). Please check the errors below.`
-        );
+        )
       }
     } catch (error) {
-      alert(`Error parsing CSV: ${error.message}`);
-      setCsvFile(null);
+      alert(`Error parsing CSV: ${error.message}`)
+      setCsvFile(null)
     }
-  };
+  }
 
-  const getPreviewData = (rowData) => {
-    if (!bulkTemplate) return { subject: "", htmlBody: "" };
+  const getPreviewData = rowData => {
+    if (!bulkTemplate) return { subject: '', htmlBody: '' }
 
-    return prepareEmailFromTemplate(bulkTemplate, rowData);
-  };
+    return prepareEmailFromTemplate(bulkTemplate, rowData)
+  }
 
   const handleBulkSend = async () => {
     if (!bulkTemplate) {
-      alert("Please select a template");
-      return;
+      alert('Please select a template')
+      return
     }
 
-    let dataToSend = [];
-    let emailCount = 0;
+    let dataToSend = []
+    let emailCount = 0
 
-    if (bulkInputMode === "csv") {
+    if (bulkInputMode === 'csv') {
       if (csvData.length === 0) {
-        alert("Please upload a CSV file with data");
-        return;
+        alert('Please upload a CSV file with data')
+        return
       }
 
       if (csvErrors.length > 0) {
-        alert("Please fix CSV validation errors before sending");
-        return;
+        alert('Please fix CSV validation errors before sending')
+        return
       }
 
-      dataToSend = csvData;
-      emailCount = csvData.length;
+      dataToSend = csvData
+      emailCount = csvData.length
     } else {
       // Manual mode
       if (manualEntries.length === 0) {
-        alert("Please add at least one recipient");
-        return;
+        alert('Please add at least one recipient')
+        return
       }
 
-      const validationErrors = validateManualEntries();
+      const validationErrors = validateManualEntries()
       if (validationErrors.length > 0) {
-        alert(
-          `Please fix the following errors:\n\n${validationErrors.join("\n")}`
-        );
-        return;
+        alert(`Please fix the following errors:\n\n${validationErrors.join('\n')}`)
+        return
       }
 
-      dataToSend = manualEntries;
-      emailCount = manualEntries.length;
+      dataToSend = manualEntries
+      emailCount = manualEntries.length
     }
 
-    const confirmSend = window.confirm(
-      `You are about to send ${emailCount} emails. Continue?`
-    );
-    if (!confirmSend) return;
+    const confirmSend = window.confirm(`You are about to send ${emailCount} emails. Continue?`)
+    if (!confirmSend) return
 
-    setSending(true);
+    setSending(true)
     try {
       // Prepare bulk email data
-      const bulkEmailData = prepareBulkEmailData(
-        dataToSend,
-        bulkTemplate,
-        replaceParameters
-      );
+      const bulkEmailData = prepareBulkEmailData(dataToSend, bulkTemplate, replaceParameters)
 
-      const result = await sendBulkEmails(bulkEmailData);
+      const result = await sendBulkEmails(bulkEmailData)
       const alertString = `Emails successfully sent:\n${JSON.stringify(
         result.success,
         null,
         2
-      )}\n\nEmails failed: ${JSON.stringify(result.failures, null, 2)}`;
-      console.log("Bulk emails sent successfully:", result);
-      alert(alertString);
+      )}\n\nEmails failed: ${JSON.stringify(result.failures, null, 2)}`
+      console.log('Bulk emails sent successfully:', result)
+      alert(alertString)
 
       // Reset form
-      setBulkTemplate(null);
-      setCsvFile(null);
-      setCsvData([]);
-      setCsvErrors([]);
-      setManualEntries([]);
+      setBulkTemplate(null)
+      setCsvFile(null)
+      setCsvData([])
+      setCsvErrors([])
+      setManualEntries([])
     } catch (error) {
-      console.error("Error sending bulk emails:", error);
-      alert(`Failed to send bulk emails: ${error.message}`);
+      console.error('Error sending bulk emails:', error)
+      alert(`Failed to send bulk emails: ${error.message}`)
     } finally {
-      setSending(false);
+      setSending(false)
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -432,7 +393,7 @@ function SendEmail() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -441,8 +402,7 @@ function SendEmail() {
 
       {templates.length === 0 ? (
         <div className="alert alert-info">
-          No templates available. Please create a template first in the
-          Templates page.
+          No templates available. Please create a template first in the Templates page.
         </div>
       ) : (
         <>
@@ -450,16 +410,16 @@ function SendEmail() {
           <ul className="nav nav-tabs mb-4">
             <li className="nav-item">
               <button
-                className={`nav-link ${activeTab === "single" ? "active" : ""}`}
-                onClick={() => setActiveTab("single")}
+                className={`nav-link ${activeTab === 'single' ? 'active' : ''}`}
+                onClick={() => setActiveTab('single')}
               >
                 Send Single Email
               </button>
             </li>
             <li className="nav-item">
               <button
-                className={`nav-link ${activeTab === "bulk" ? "active" : ""}`}
-                onClick={() => setActiveTab("bulk")}
+                className={`nav-link ${activeTab === 'bulk' ? 'active' : ''}`}
+                onClick={() => setActiveTab('bulk')}
               >
                 Bulk Send
               </button>
@@ -467,7 +427,7 @@ function SendEmail() {
           </ul>
 
           {/* Single Email Tab */}
-          {activeTab === "single" && (
+          {activeTab === 'single' && (
             <div className="row">
               {/* Left Column - Template Selection and Parameters */}
               <div className="col-md-5">
@@ -478,16 +438,14 @@ function SendEmail() {
                   <div className="card-body">
                     <select
                       className="form-select"
-                      value={selectedTemplate?.id || ""}
-                      onChange={(e) => {
-                        const template = templates.find(
-                          (t) => t.id === e.target.value
-                        );
-                        handleTemplateSelect(template || null);
+                      value={selectedTemplate?.id || ''}
+                      onChange={e => {
+                        const template = templates.find(t => t.id === e.target.value)
+                        handleTemplateSelect(template || null)
                       }}
                     >
                       <option value="">-- Select a template --</option>
-                      {templates.map((template) => (
+                      {templates.map(template => (
                         <option key={template.id} value={template.id}>
                           {template.name}
                         </option>
@@ -504,16 +462,14 @@ function SendEmail() {
                         <h5 className="mb-0">2. Fill Parameters</h5>
                       </div>
                       <div className="card-body">
-                        {selectedTemplate.parameters.map((param) => (
+                        {selectedTemplate.parameters.map(param => (
                           <div key={param} className="mb-3">
                             <label className="form-label">{param}</label>
                             <input
                               type="text"
                               className="form-control"
-                              value={parameterValues[param] || ""}
-                              onChange={(e) =>
-                                handleParameterChange(param, e.target.value)
-                              }
+                              value={parameterValues[param] || ''}
+                              onChange={e => handleParameterChange(param, e.target.value)}
                               placeholder={`Enter value for ${param}`}
                             />
                           </div>
@@ -536,12 +492,10 @@ function SendEmail() {
                           type="text"
                           className="form-control"
                           value={subject}
-                          onChange={(e) => setSubject(e.target.value)}
+                          onChange={e => setSubject(e.target.value)}
                           placeholder="Enter email subject"
                         />
-                        <div className="form-text">
-                          You can edit the subject before sending
-                        </div>
+                        <div className="form-text">You can edit the subject before sending</div>
                       </div>
 
                       <div className="mb-3">
@@ -549,24 +503,17 @@ function SendEmail() {
                           Recipients <span className="text-danger">*</span>
                         </label>
                         <textarea
-                          className={`form-control ${
-                            recipientsError ? "is-invalid" : ""
-                          }`}
+                          className={`form-control ${recipientsError ? 'is-invalid' : ''}`}
                           rows="2"
                           value={recipients}
-                          onChange={(e) =>
-                            handleRecipientsChange(e.target.value)
-                          }
+                          onChange={e => handleRecipientsChange(e.target.value)}
                           placeholder="Enter email addresses separated by commas (e.g., user1@example.com, user2@example.com)"
                         />
                         {recipientsError ? (
-                          <div className="invalid-feedback">
-                            {recipientsError}
-                          </div>
+                          <div className="invalid-feedback">{recipientsError}</div>
                         ) : (
                           <div className="form-text">
-                            Separate multiple email addresses with commas or
-                            semicolons
+                            Separate multiple email addresses with commas or semicolons
                           </div>
                         )}
                       </div>
@@ -574,20 +521,17 @@ function SendEmail() {
                       <div className="mb-3">
                         <label className="form-label">CC List (Optional)</label>
                         <textarea
-                          className={`form-control ${
-                            ccListError ? "is-invalid" : ""
-                          }`}
+                          className={`form-control ${ccListError ? 'is-invalid' : ''}`}
                           rows="2"
                           value={ccList}
-                          onChange={(e) => handleCcListChange(e.target.value)}
+                          onChange={e => handleCcListChange(e.target.value)}
                           placeholder="Enter CC email addresses separated by commas"
                         />
                         {ccListError ? (
                           <div className="invalid-feedback">{ccListError}</div>
                         ) : (
                           <div className="form-text">
-                            Separate multiple email addresses with commas or
-                            semicolons
+                            Separate multiple email addresses with commas or semicolons
                           </div>
                         )}
                       </div>
@@ -613,7 +557,7 @@ function SendEmail() {
                             Sending...
                           </>
                         ) : (
-                          "Send Email"
+                          'Send Email'
                         )}
                       </button>
                     </div>
@@ -624,7 +568,7 @@ function SendEmail() {
               {/* Right Column - Preview */}
               <div className="col-md-7">
                 {selectedTemplate ? (
-                  <div className="card sticky-top" style={{ top: "20px" }}>
+                  <div className="card sticky-top" style={{ top: '20px' }}>
                     <div className="card-header">
                       <h5 className="mb-0">Email Preview</h5>
                     </div>
@@ -632,41 +576,35 @@ function SendEmail() {
                       <div className="mb-3">
                         <label className="form-label fw-bold">Subject:</label>
                         <div className="p-2 bg-light rounded border">
-                          {subject || (
-                            <span className="text-muted">No subject</span>
-                          )}
+                          {subject || <span className="text-muted">No subject</span>}
                         </div>
                       </div>
 
                       <div>
-                        <label className="form-label fw-bold">
-                          HTML Preview:
-                        </label>
+                        <label className="form-label fw-bold">HTML Preview:</label>
                         <div
                           className="border rounded p-3 bg-white"
                           style={{
-                            minHeight: "300px",
-                            maxHeight: "500px",
-                            overflow: "auto",
-                            wordBreak: "break-word",
-                            whiteSpace: "pre-wrap",
+                            minHeight: '300px',
+                            maxHeight: '500px',
+                            overflow: 'auto',
+                            wordBreak: 'break-word',
+                            whiteSpace: 'pre-wrap',
                           }}
-                          dangerouslySetInnerHTML={{ __html: htmlBody }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlBody) }}
                         />
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="alert alert-secondary">
-                    Select a template to see the preview
-                  </div>
+                  <div className="alert alert-secondary">Select a template to see the preview</div>
                 )}
               </div>
             </div>
           )}
 
           {/* Bulk Send Tab */}
-          {activeTab === "bulk" && (
+          {activeTab === 'bulk' && (
             <div>
               <div className="row">
                 <div className="col-12">
@@ -680,16 +618,14 @@ function SendEmail() {
                           <label className="form-label">Template</label>
                           <select
                             className="form-select"
-                            value={bulkTemplate?.id || ""}
-                            onChange={(e) => {
-                              const template = templates.find(
-                                (t) => t.id === e.target.value
-                              );
-                              handleBulkTemplateSelect(template || null);
+                            value={bulkTemplate?.id || ''}
+                            onChange={e => {
+                              const template = templates.find(t => t.id === e.target.value)
+                              handleBulkTemplateSelect(template || null)
                             }}
                           >
                             <option value="">-- Select a template --</option>
-                            {templates.map((template) => (
+                            {templates.map(template => (
                               <option key={template.id} value={template.id}>
                                 {template.name}
                               </option>
@@ -700,7 +636,7 @@ function SendEmail() {
                           <button
                             className="btn btn-outline-primary w-100"
                             onClick={handleDownloadSampleCSV}
-                            disabled={!bulkTemplate || bulkInputMode !== "csv"}
+                            disabled={!bulkTemplate || bulkInputMode !== 'csv'}
                           >
                             Download Sample CSV
                           </button>
@@ -722,8 +658,8 @@ function SendEmail() {
                             name="bulkInputMode"
                             id="csvMode"
                             autoComplete="off"
-                            checked={bulkInputMode === "csv"}
-                            onChange={() => setBulkInputMode("csv")}
+                            checked={bulkInputMode === 'csv'}
+                            onChange={() => setBulkInputMode('csv')}
                           />
                           <label className="btn btn-outline-primary" htmlFor="csvMode">
                             Upload CSV File
@@ -735,8 +671,8 @@ function SendEmail() {
                             name="bulkInputMode"
                             id="manualMode"
                             autoComplete="off"
-                            checked={bulkInputMode === "manual"}
-                            onChange={() => setBulkInputMode("manual")}
+                            checked={bulkInputMode === 'manual'}
+                            onChange={() => setBulkInputMode('manual')}
                           />
                           <label className="btn btn-outline-primary" htmlFor="manualMode">
                             Enter Manually
@@ -746,7 +682,7 @@ function SendEmail() {
                     </div>
                   )}
 
-                  {bulkTemplate && bulkInputMode === "csv" && (
+                  {bulkTemplate && bulkInputMode === 'csv' && (
                     <div className="card mb-3">
                       <div className="card-header">
                         <h5 className="mb-0">3. Upload CSV File</h5>
@@ -766,14 +702,13 @@ function SendEmail() {
                         <div className="mt-3">
                           <small className="text-muted">
                             Required CSV columns: <strong>recipient, cc</strong>
-                            {bulkTemplate.parameters &&
-                              bulkTemplate.parameters.length > 0 && (
-                                <>, {bulkTemplate.parameters.join(", ")}</>
-                              )}
+                            {bulkTemplate.parameters && bulkTemplate.parameters.length > 0 && (
+                              <>, {bulkTemplate.parameters.join(', ')}</>
+                            )}
                             <br />
                             <em>
-                              Note: recipient and cc columns can have multiple
-                              emails separated by commas or semicolons
+                              Note: recipient and cc columns can have multiple emails separated by
+                              commas or semicolons
                             </em>
                           </small>
                         </div>
@@ -781,14 +716,15 @@ function SendEmail() {
                     </div>
                   )}
 
-                  {bulkTemplate && bulkInputMode === "manual" && (
+                  {bulkTemplate && bulkInputMode === 'manual' && (
                     <div className="card mb-3">
                       <div className="card-header d-flex justify-content-between align-items-center">
                         <h5 className="mb-0">
                           3. Enter Recipients Manually
                           {manualEntries.length > 0 && (
                             <span className="text-muted ms-2">
-                              ({manualEntries.length} recipient{manualEntries.length !== 1 ? 's' : ''})
+                              ({manualEntries.length} recipient
+                              {manualEntries.length !== 1 ? 's' : ''})
                             </span>
                           )}
                         </h5>
@@ -813,10 +749,7 @@ function SendEmail() {
                               )}
                             </button>
                           )}
-                          <button
-                            className="btn btn-sm btn-primary"
-                            onClick={handleAddManualEntry}
-                          >
+                          <button className="btn btn-sm btn-primary" onClick={handleAddManualEntry}>
                             + Add Recipient
                           </button>
                         </div>
@@ -830,24 +763,24 @@ function SendEmail() {
                           <div
                             className="table-responsive"
                             style={{
-                              maxHeight: "500px",
-                              overflow: "auto",
+                              maxHeight: '500px',
+                              overflow: 'auto',
                             }}
                           >
                             <table className="table table-sm table-hover mb-0">
                               <thead className="table-light sticky-top">
                                 <tr>
-                                  <th style={{ width: "40px" }}>#</th>
-                                  <th style={{ minWidth: "200px" }}>
+                                  <th style={{ width: '40px' }}>#</th>
+                                  <th style={{ minWidth: '200px' }}>
                                     Recipient <span className="text-danger">*</span>
                                   </th>
-                                  <th style={{ minWidth: "180px" }}>CC</th>
-                                  {bulkTemplate?.parameters?.map((param) => (
-                                    <th key={param} style={{ minWidth: "150px" }}>
+                                  <th style={{ minWidth: '180px' }}>CC</th>
+                                  {bulkTemplate?.parameters?.map(param => (
+                                    <th key={param} style={{ minWidth: '150px' }}>
                                       {param} <span className="text-danger">*</span>
                                     </th>
                                   ))}
-                                  <th style={{ width: "140px" }}>Actions</th>
+                                  <th style={{ width: '140px' }}>Actions</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -859,10 +792,10 @@ function SendEmail() {
                                         type="text"
                                         className="form-control form-control-sm"
                                         value={entry.recipient}
-                                        onChange={(e) =>
+                                        onChange={e =>
                                           handleManualEntryChange(
                                             index,
-                                            "recipient",
+                                            'recipient',
                                             e.target.value
                                           )
                                         }
@@ -874,28 +807,20 @@ function SendEmail() {
                                         type="text"
                                         className="form-control form-control-sm"
                                         value={entry.cc}
-                                        onChange={(e) =>
-                                          handleManualEntryChange(
-                                            index,
-                                            "cc",
-                                            e.target.value
-                                          )
+                                        onChange={e =>
+                                          handleManualEntryChange(index, 'cc', e.target.value)
                                         }
                                         placeholder="cc@example.com"
                                       />
                                     </td>
-                                    {bulkTemplate?.parameters?.map((param) => (
+                                    {bulkTemplate?.parameters?.map(param => (
                                       <td key={param}>
                                         <input
                                           type="text"
                                           className="form-control form-control-sm"
-                                          value={entry[param] || ""}
-                                          onChange={(e) =>
-                                            handleManualEntryChange(
-                                              index,
-                                              param,
-                                              e.target.value
-                                            )
+                                          value={entry[param] || ''}
+                                          onChange={e =>
+                                            handleManualEntryChange(index, param, e.target.value)
                                           }
                                           placeholder={`Enter ${param}`}
                                         />
@@ -927,15 +852,10 @@ function SendEmail() {
                     </div>
                   )}
 
-                  {csvErrors.length > 0 && bulkInputMode === "csv" && (
+                  {csvErrors.length > 0 && bulkInputMode === 'csv' && (
                     <div className="alert alert-danger">
-                      <h6 className="alert-heading">
-                        CSV Validation Errors ({csvErrors.length})
-                      </h6>
-                      <ul
-                        className="mb-0"
-                        style={{ maxHeight: "200px", overflow: "auto" }}
-                      >
+                      <h6 className="alert-heading">CSV Validation Errors ({csvErrors.length})</h6>
+                      <ul className="mb-0" style={{ maxHeight: '200px', overflow: 'auto' }}>
                         {csvErrors.map((error, index) => (
                           <li key={index}>{error}</li>
                         ))}
@@ -943,91 +863,86 @@ function SendEmail() {
                     </div>
                   )}
 
-                  {bulkInputMode === "csv" &&
-                    csvData.length > 0 &&
-                    csvErrors.length === 0 && (
-                      <div className="card mb-3">
-                        <div className="card-header d-flex justify-content-between align-items-center">
-                          <h5 className="mb-0">
-                            4. Review Data ({csvData.length} records)
-                          </h5>
-                          <button
-                            className="btn btn-success"
-                            onClick={handleBulkSend}
-                            disabled={sending}
-                          >
-                            {sending ? (
-                              <>
-                                <span
-                                  className="spinner-border spinner-border-sm me-2"
-                                  role="status"
-                                  aria-hidden="true"
-                                ></span>
-                                Sending...
-                              </>
-                            ) : (
-                              `Send ${csvData.length} Emails`
-                            )}
-                          </button>
-                        </div>
-                        <div className="card-body p-0">
-                          <div
-                            className="table-responsive"
-                            style={{
-                              maxHeight: "500px",
-                              overflow: "auto",
-                              padding: "0px 5px",
-                            }}
-                          >
-                            <table className="table table-sm table-hover mb-0">
-                              <thead className="table-light sticky-top">
-                                <tr>
-                                  <th style={{ width: "50px" }}>#</th>
-                                  <th>Recipient</th>
-                                  <th>CC</th>
-                                  {bulkTemplate?.parameters?.map((param) => (
-                                    <th key={param}>{param}</th>
-                                  ))}
-                                  <th style={{ width: "100px" }}>Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {csvData.map((row, index) => (
-                                  <tr key={index}>
-                                    <td>{index + 1}</td>
-                                    <td>{row.recipient}</td>
-                                    <td>{row.cc || "-"}</td>
-                                    {bulkTemplate?.parameters?.map((param) => (
-                                      <td key={param}>{row[param]}</td>
-                                    ))}
-                                    <td>
-                                      <button
-                                        className="btn btn-sm btn-outline-primary"
-                                        onClick={() => setPreviewIndex(index)}
-                                      >
-                                        Preview
-                                      </button>
-                                    </td>
-                                  </tr>
+                  {bulkInputMode === 'csv' && csvData.length > 0 && csvErrors.length === 0 && (
+                    <div className="card mb-3">
+                      <div className="card-header d-flex justify-content-between align-items-center">
+                        <h5 className="mb-0">4. Review Data ({csvData.length} records)</h5>
+                        <button
+                          className="btn btn-success"
+                          onClick={handleBulkSend}
+                          disabled={sending}
+                        >
+                          {sending ? (
+                            <>
+                              <span
+                                className="spinner-border spinner-border-sm me-2"
+                                role="status"
+                                aria-hidden="true"
+                              ></span>
+                              Sending...
+                            </>
+                          ) : (
+                            `Send ${csvData.length} Emails`
+                          )}
+                        </button>
+                      </div>
+                      <div className="card-body p-0">
+                        <div
+                          className="table-responsive"
+                          style={{
+                            maxHeight: '500px',
+                            overflow: 'auto',
+                            padding: '0px 5px',
+                          }}
+                        >
+                          <table className="table table-sm table-hover mb-0">
+                            <thead className="table-light sticky-top">
+                              <tr>
+                                <th style={{ width: '50px' }}>#</th>
+                                <th>Recipient</th>
+                                <th>CC</th>
+                                {bulkTemplate?.parameters?.map(param => (
+                                  <th key={param}>{param}</th>
                                 ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                <th style={{ width: '100px' }}>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {csvData.map((row, index) => (
+                                <tr key={index}>
+                                  <td>{index + 1}</td>
+                                  <td>{row.recipient}</td>
+                                  <td>{row.cc || '-'}</td>
+                                  {bulkTemplate?.parameters?.map(param => (
+                                    <td key={param}>{row[param]}</td>
+                                  ))}
+                                  <td>
+                                    <button
+                                      className="btn btn-sm btn-outline-primary"
+                                      onClick={() => setPreviewIndex(index)}
+                                    >
+                                      Preview
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
-                    )}
-
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Preview Modal */}
               {previewIndex !== null &&
-                ((bulkInputMode === "csv" && csvData[previewIndex]) ||
-                  (bulkInputMode === "manual" && manualEntries[previewIndex])) && (
+                ((bulkInputMode === 'csv' && csvData[previewIndex]) ||
+                  (bulkInputMode === 'manual' && manualEntries[previewIndex])) && (
                   <div
                     className="modal show d-block"
                     tabIndex="-1"
-                    style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+                    style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
                   >
                     <div className="modal-dialog modal-lg">
                       <div className="modal-content">
@@ -1044,17 +959,15 @@ function SendEmail() {
                         <div className="modal-body">
                           {(() => {
                             const data =
-                              bulkInputMode === "csv"
+                              bulkInputMode === 'csv'
                                 ? csvData[previewIndex]
-                                : manualEntries[previewIndex];
-                            const previewData = getPreviewData(data);
+                                : manualEntries[previewIndex]
+                            const previewData = getPreviewData(data)
 
                             return (
                               <>
                                 <div className="mb-3">
-                                  <label className="form-label fw-bold">
-                                    Recipient:
-                                  </label>
+                                  <label className="form-label fw-bold">Recipient:</label>
                                   <div className="p-2 bg-light rounded border">
                                     {data.recipient}
                                   </div>
@@ -1062,48 +975,38 @@ function SendEmail() {
 
                                 {data.cc && (
                                   <div className="mb-3">
-                                    <label className="form-label fw-bold">
-                                      CC:
-                                    </label>
-                                    <div className="p-2 bg-light rounded border">
-                                      {data.cc}
-                                    </div>
+                                    <label className="form-label fw-bold">CC:</label>
+                                    <div className="p-2 bg-light rounded border">{data.cc}</div>
                                   </div>
                                 )}
 
                                 <div className="mb-3">
-                                  <label className="form-label fw-bold">
-                                    Subject:
-                                  </label>
+                                  <label className="form-label fw-bold">Subject:</label>
                                   <div className="p-2 bg-light rounded border">
                                     {previewData.subject || (
-                                      <span className="text-muted">
-                                        No subject
-                                      </span>
+                                      <span className="text-muted">No subject</span>
                                     )}
                                   </div>
                                 </div>
 
                                 <div>
-                                  <label className="form-label fw-bold">
-                                    HTML Preview:
-                                  </label>
+                                  <label className="form-label fw-bold">HTML Preview:</label>
                                   <div
                                     className="border rounded p-3 bg-white"
                                     style={{
-                                      minHeight: "300px",
-                                      maxHeight: "400px",
-                                      overflow: "auto",
-                                      wordBreak: "break-word",
-                                      whiteSpace: "pre-wrap",
+                                      minHeight: '300px',
+                                      maxHeight: '400px',
+                                      overflow: 'auto',
+                                      wordBreak: 'break-word',
+                                      whiteSpace: 'pre-wrap',
                                     }}
                                     dangerouslySetInnerHTML={{
-                                      __html: previewData.htmlBody,
+                                      __html: sanitizeHtml(previewData.htmlBody),
                                     }}
                                   />
                                 </div>
                               </>
-                            );
+                            )
                           })()}
                         </div>
                         <div className="modal-footer">
@@ -1124,7 +1027,7 @@ function SendEmail() {
         </>
       )}
     </div>
-  );
+  )
 }
 
-export default SendEmail;
+export default SendEmail

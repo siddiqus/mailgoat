@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { sanitizeHtml } from '../utils/sanitizer'
 import { validateHTML, extractParameters } from '../utils/templateValidator'
 
 function TemplateModal({ show, onHide, onSave, template = null }) {
@@ -11,7 +12,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
   const [isValid, setIsValid] = useState(true)
 
   // Convert line breaks to <br> tags
-  const processHtmlString = (html) => {
+  const processHtmlString = html => {
     if (!html) return ''
     // Replace newlines with <br> tags
     return html.replace(/\n/g, '<br>')
@@ -59,7 +60,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     setParameters(allParams)
   }, [htmlString, subject])
 
-  const validateName = (nameValue) => {
+  const validateName = nameValue => {
     const trimmedName = nameValue.trim()
     if (!trimmedName) {
       setNameError('Template name cannot be empty or contain only spaces')
@@ -69,7 +70,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     return true
   }
 
-  const handleNameChange = (e) => {
+  const handleNameChange = e => {
     const newName = e.target.value
     setName(newName)
     if (newName) {
@@ -101,7 +102,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
       name: name.trim(),
       subject: subject.trim(),
       htmlString: processedHtmlString,
-      parameters
+      parameters,
     }
 
     onSave(templateData)
@@ -121,13 +122,15 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
   if (!show) return null
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+    <div
+      className="modal show d-block"
+      tabIndex="-1"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+    >
       <div className="modal-dialog modal-lg">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">
-              {template ? 'Edit Template' : 'Create Template'}
-            </h5>
+            <h5 className="modal-title">{template ? 'Edit Template' : 'Create Template'}</h5>
             <button type="button" className="btn-close" onClick={handleClose}></button>
           </div>
           <div className="modal-body">
@@ -143,11 +146,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                 onChange={handleNameChange}
                 placeholder="Enter a descriptive name for your template"
               />
-              {nameError && (
-                <div className="invalid-feedback d-block">
-                  {nameError}
-                </div>
-              )}
+              {nameError && <div className="invalid-feedback d-block">{nameError}</div>}
             </div>
 
             <div className="mb-3">
@@ -159,7 +158,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                 id="subject"
                 className="form-control"
                 value={subject}
-                onChange={(e) => setSubject(e.target.value)}
+                onChange={e => setSubject(e.target.value)}
                 placeholder="Enter email subject (can include {{parameters}})"
               />
               <div className="form-text">
@@ -176,7 +175,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                 className={`form-control ${!isValid && htmlString ? 'is-invalid' : ''}`}
                 rows="10"
                 value={htmlString}
-                onChange={(e) => setHtmlString(e.target.value)}
+                onChange={e => setHtmlString(e.target.value)}
                 placeholder="Enter your HTML template here. Use {{parameterName}} for dynamic values."
               />
               {!isValid && validationErrors.length > 0 && (
@@ -204,9 +203,9 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                     maxHeight: '300px',
                     overflow: 'auto',
                     wordBreak: 'break-word',
-                    whiteSpace: 'pre-wrap'
+                    whiteSpace: 'pre-wrap',
                   }}
-                  dangerouslySetInnerHTML={{ __html: processHtmlString(htmlString) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(processHtmlString(htmlString)) }}
                 />
                 <div className="form-text">
                   This is how your HTML will be rendered (line breaks will be preserved)

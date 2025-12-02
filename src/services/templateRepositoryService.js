@@ -15,7 +15,7 @@ export const getAllTemplates = async () => {
  * @param {string} id - Template ID
  * @returns {Promise<Object|null>} Template or null
  */
-export const getTemplateById = async (id) => {
+export const getTemplateById = async id => {
   return await templateRepository.getById(id)
 }
 
@@ -24,7 +24,7 @@ export const getTemplateById = async (id) => {
  * @param {Object} templateData - Template data
  * @returns {Promise<Object>} Created template
  */
-export const createTemplate = async (templateData) => {
+export const createTemplate = async templateData => {
   return await templateRepository.create(templateData)
 }
 
@@ -43,6 +43,6 @@ export const updateTemplate = async (id, templateData) => {
  * @param {string} id - Template ID
  * @returns {Promise<boolean>} True if deleted
  */
-export const deleteTemplate = async (id) => {
+export const deleteTemplate = async id => {
   return await templateRepository.delete(id)
 }

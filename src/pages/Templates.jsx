@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import TemplateModal from '../components/TemplateModal'
 import {
   getAllTemplates,
   createTemplate,
   updateTemplate,
-  deleteTemplate
+  deleteTemplate,
 } from '../services/templateRepositoryService'
+import { sanitizeHtml } from '../utils/sanitizer'
 
 function Templates() {
   const [templates, setTemplates] = useState([])
@@ -36,12 +37,12 @@ function Templates() {
     setShowModal(true)
   }
 
-  const handleEditClick = (template) => {
+  const handleEditClick = template => {
     setEditingTemplate(template)
     setShowModal(true)
   }
 
-  const handleDeleteClick = async (id) => {
+  const handleDeleteClick = async id => {
     if (!window.confirm('Are you sure you want to delete this template?')) {
       return
     }
@@ -55,7 +56,7 @@ function Templates() {
     }
   }
 
-  const handleSave = async (templateData) => {
+  const handleSave = async templateData => {
     try {
       if (editingTemplate) {
         // Update existing template
@@ -99,25 +100,23 @@ function Templates() {
         </div>
       ) : (
         <div className="row">
-          {templates.map((template) => (
+          {templates.map(template => (
             <div key={template.id} className="col-md-6 col-lg-4 mb-4">
               <div className="card h-100">
                 <div className="card-body">
-                  <h5 className="card-title text-primary">{template.name || 'Untitled Template'}</h5>
+                  <h5 className="card-title text-primary">
+                    {template.name || 'Untitled Template'}
+                  </h5>
 
                   <div className="mb-2">
                     <small className="text-muted">ID:</small>
-                    <div className="text-muted small font-monospace">
-                      {template.id}
-                    </div>
+                    <div className="text-muted small font-monospace">{template.id}</div>
                   </div>
 
                   {template.subject && (
                     <div className="mb-2">
                       <small className="text-muted">Subject:</small>
-                      <div className="mt-1 fw-medium">
-                        {template.subject}
-                      </div>
+                      <div className="mt-1 fw-medium">{template.subject}</div>
                     </div>
                   )}
 
@@ -129,9 +128,9 @@ function Templates() {
                         maxHeight: '150px',
                         overflow: 'auto',
                         fontSize: '0.9rem',
-                        whiteSpace: 'pre-wrap'
+                        whiteSpace: 'pre-wrap',
                       }}
-                      dangerouslySetInnerHTML={{ __html: template.htmlString }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(template.htmlString) }}
                     />
                   </div>
 

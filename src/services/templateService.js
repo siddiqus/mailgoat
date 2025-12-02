@@ -19,7 +19,7 @@ export const replaceParameters = (text, values) => {
  * @param {string} emailString - String with email addresses
  * @returns {Array<string>} Array of email addresses
  */
-export const parseEmailList = (emailString) => {
+export const parseEmailList = emailString => {
   if (!emailString || !emailString.trim()) return []
   return emailString
     .split(/[,;]/)
@@ -45,14 +45,16 @@ export const prepareEmailFromTemplate = (template, parameterValues) => {
  * @param {Object} template - Email template
  * @returns {string} CSV content
  */
-export const generateSampleCSV = (template) => {
+export const generateSampleCSV = template => {
   const requiredColumns = ['recipient', 'cc', ...(template.parameters || [])]
   const headers = requiredColumns.join(',')
-  const sampleRow = requiredColumns.map(col => {
-    if (col === 'recipient') return 'user1@example.com; user2@example.com'
-    if (col === 'cc') return 'cc@example.com (optional)'
-    return `sample_${col}`
-  }).join(',')
+  const sampleRow = requiredColumns
+    .map(col => {
+      if (col === 'recipient') return 'user1@example.com; user2@example.com'
+      if (col === 'cc') return 'cc@example.com (optional)'
+      return `sample_${col}`
+    })
+    .join(',')
 
   return `${headers}\n${sampleRow}`
 }

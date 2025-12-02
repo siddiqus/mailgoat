@@ -1,26 +1,30 @@
-import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import TopBar from './components/TopBar'
+import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './components/HomePage'
-import Templates from './pages/Templates'
+import TopBar from './components/TopBar'
 import SendEmail from './pages/SendEmail'
 import Settings from './pages/Settings'
+import Templates from './pages/Templates'
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <TopBar />
-        <div style={{ paddingTop: '56px' }}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/templates" element={<Templates />} />
-            <Route path="/send-email" element={<SendEmail />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
+    <ErrorBoundary>
+      <Router>
+        <div className="App">
+          <TopBar />
+          <div style={{ paddingTop: '56px' }}>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/templates" element={<Templates />} />
+                <Route path="/send-email" element={<SendEmail />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
+            </ErrorBoundary>
+          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
+    </ErrorBoundary>
   )
 }
 

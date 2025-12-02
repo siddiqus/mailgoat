@@ -29,7 +29,7 @@ class LocalStorageSettingsRepository {
     try {
       const updatedSettings = {
         ...settings,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       }
       localStorage.setItem(this.storageKey, JSON.stringify(updatedSettings))
       return updatedSettings
@@ -53,8 +53,8 @@ class LocalStorageSettingsRepository {
           recipients: 'recipients',
           ccList: 'ccList',
           subject: 'subject',
-          htmlBody: 'htmlBody'
-        }
+          htmlBody: 'htmlBody',
+        },
       },
       smtp: {
         host: '',
@@ -63,10 +63,10 @@ class LocalStorageSettingsRepository {
         username: '',
         password: '',
         fromEmail: '',
-        fromName: ''
+        fromName: '',
       },
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     }
   }
 }
