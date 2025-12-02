@@ -4,6 +4,7 @@ import TopBar from './components/TopBar'
 import HomePage from './components/HomePage'
 import Templates from './pages/Templates'
 import SendEmail from './pages/SendEmail'
+import Settings from './pages/Settings'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/send-email" element={<SendEmail />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>
       </div>
