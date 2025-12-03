@@ -68,7 +68,6 @@ class LocalStorageSettingsRepository {
       supabase: {
         url: '',
         key: '',
-        trackingUrl: '',
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

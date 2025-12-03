@@ -23,7 +23,6 @@ function Settings() {
   // Supabase settings
   const [supabaseUrl, setSupabaseUrl] = useState('')
   const [supabaseKey, setSupabaseKey] = useState('')
-  const [trackingUrl, setTrackingUrl] = useState('')
 
   useEffect(() => {
     loadSettings()
@@ -48,7 +47,6 @@ function Settings() {
       // Load Supabase settings
       setSupabaseUrl(data.supabase?.url || '')
       setSupabaseKey(data.supabase?.key || '')
-      setTrackingUrl(data.supabase?.trackingUrl || '')
     } catch (error) {
       console.error('Error loading settings:', error)
       alert('Failed to load settings')
@@ -116,11 +114,6 @@ function Settings() {
       }
     } else if (activeTab === 'supabase') {
       // Validate Supabase settings
-      if (!trackingUrl.trim()) {
-        alert('Please enter a tracking URL')
-        return
-      }
-
       if (!supabaseUrl.trim()) {
         alert('Please enter a Supabase URL')
         return
@@ -128,13 +121,6 @@ function Settings() {
 
       if (!supabaseKey.trim()) {
         alert('Please enter a Supabase key')
-        return
-      }
-
-      try {
-        new URL(trackingUrl)
-      } catch (error) {
-        alert('Please enter a valid tracking URL')
         return
       }
 
@@ -152,7 +138,6 @@ function Settings() {
           supabase: {
             url: supabaseUrl,
             key: supabaseKey,
-            trackingUrl: trackingUrl,
           },
         }
 
@@ -516,23 +501,6 @@ function Settings() {
               <div className="card-body">
                 <div className="mb-4">
                   <label className="form-label fw-bold">
-                    Tracking URL <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="url"
-                    className="form-control"
-                    value={trackingUrl}
-                    onChange={e => setTrackingUrl(e.target.value)}
-                    placeholder="https://your-project.supabase.co/functions/v1/track"
-                  />
-                  <div className="form-text">
-                    Enter the URL endpoint for tracking pixel requests (e.g., Supabase Edge Function
-                    URL)
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="form-label fw-bold">
                     Supabase URL <span className="text-danger">*</span>
                   </label>
                   <input
@@ -564,12 +532,21 @@ function Settings() {
                 <div className="alert alert-info">
                   <strong>How it works:</strong>
                   <ul className="mb-0 mt-2">
-                    <li>The tracking URL will be used to embed a 1x1 pixel in your emails</li>
+                    <li>
+                      The tracking pixel URL is automatically generated as:{' '}
+                      <code>{'{supabaseUrl}'}/functions/v1/store-email-interaction</code>
+                    </li>
+                    <li>
+                      The analytics data is fetched from:{' '}
+                      <code>{'{supabaseUrl}'}/functions/v1/get-email-interactions</code>
+                    </li>
                     <li>
                       When recipients open the email, the pixel sends a request to track the open
                       event
                     </li>
-                    <li>Supabase credentials are used to store tracking data securely</li>
+                    <li>
+                      Supabase credentials are used to store and retrieve tracking data securely
+                    </li>
                   </ul>
                 </div>
 
@@ -604,16 +581,6 @@ function Settings() {
                 <p className="small text-muted">Current Supabase configuration:</p>
 
                 <div className="mb-3">
-                  <strong className="small">Tracking URL:</strong>
-                  <pre
-                    className="bg-light p-2 rounded mt-1 small mb-0"
-                    style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}
-                  >
-                    {trackingUrl || 'Not configured'}
-                  </pre>
-                </div>
-
-                <div className="mb-3">
                   <strong className="small">Supabase URL:</strong>
                   <pre
                     className="bg-light p-2 rounded mt-1 small mb-0"
@@ -633,16 +600,38 @@ function Settings() {
                   </pre>
                 </div>
 
-                {trackingUrl && (
-                  <div className="mt-3">
-                    <strong className="small">Example Pixel:</strong>
-                    <pre
-                      className="bg-light p-2 rounded mt-1 small mb-0"
-                      style={{ fontSize: '0.65rem', wordBreak: 'break-all' }}
-                    >
-                      {`<img src="${trackingUrl}?id=campaign_id&email=recipient_email" width="1" height="1" />`}
-                    </pre>
-                  </div>
+                {supabaseUrl && (
+                  <>
+                    <div className="mb-3">
+                      <strong className="small">Tracking Pixel URL:</strong>
+                      <pre
+                        className="bg-light p-2 rounded mt-1 small mb-0"
+                        style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}
+                      >
+                        {`${supabaseUrl}/functions/v1/store-email-interaction`}
+                      </pre>
+                    </div>
+
+                    <div className="mb-3">
+                      <strong className="small">Analytics URL:</strong>
+                      <pre
+                        className="bg-light p-2 rounded mt-1 small mb-0"
+                        style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}
+                      >
+                        {`${supabaseUrl}/functions/v1/get-email-interactions`}
+                      </pre>
+                    </div>
+
+                    <div className="mt-3">
+                      <strong className="small">Example Pixel:</strong>
+                      <pre
+                        className="bg-light p-2 rounded mt-1 small mb-0"
+                        style={{ fontSize: '0.65rem', wordBreak: 'break-all' }}
+                      >
+                        {`<img src="${supabaseUrl}/functions/v1/store-email-interaction?campaignId=123&recipient=some@email.com&templateId=abc&emailId=asd" width="1" height="1" />`}
+                      </pre>
+                    </div>
+                  </>
                 )}
               </div>
             </div>

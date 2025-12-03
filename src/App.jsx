@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './components/HomePage'
 import TopBar from './components/TopBar'
+import Analytics from './pages/Analytics'
 import Campaigns from './pages/Campaigns'
 import History from './pages/History'
 import SendEmail from './pages/SendEmail'
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/send-email" element={<SendEmail />} />
                 <Route path="/history" element={<History />} />
+                <Route path="/analytics" element={<Analytics />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </ErrorBoundary>

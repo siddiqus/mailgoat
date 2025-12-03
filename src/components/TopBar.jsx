@@ -47,6 +47,11 @@ function TopBar() {
               </Link>
             </li>
             <li className="nav-item mx-3">
+              <Link className="nav-link" to="/analytics">
+                Analytics
+              </Link>
+            </li>
+            <li className="nav-item mx-3">
               <Link className="nav-link" to="/settings">
                 Settings
               </Link>

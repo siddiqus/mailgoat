@@ -1,5 +1,6 @@
 import axios from 'axios'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
+import { getTrackingPixelUrl } from './analyticsService'
 import { incrementCampaignEmailCount } from './campaignService'
 import {
   saveToHistory,
@@ -18,7 +19,7 @@ const settingsRepository = new LocalStorageSettingsRepository()
  * @param {string} params.emailId - The unique email ID
  * @param {string} params.templateId - The template ID (optional)
  * @param {string} params.campaignId - The campaign ID (optional)
- * @param {string} params.trackingUrl - The tracking URL from Supabase config
+ * @param {string} params.supabaseUrl - The base url for supabase
  * @returns {string} HTML with tracking pixel appended
  */
 const addTrackingPixel = ({
@@ -27,20 +28,20 @@ const addTrackingPixel = ({
   emailId,
   templateId,
   campaignId,
-  trackingUrl,
+  supabaseUrl,
 }) => {
-  // Skip adding pixel if no tracking URL is configured
-  if (!trackingUrl) {
+  if (!supabaseUrl) {
     return htmlBody
   }
 
-  const url = new URL(trackingUrl)
-  url.searchParams.set('recipient', recipient)
-  url.searchParams.set('emailId', emailId)
-  if (templateId) url.searchParams.set('templateId', templateId)
-  if (campaignId) url.searchParams.set('campaignId', campaignId)
+  const trackingPixelUrl = getTrackingPixelUrl({
+    emailId,
+    campaignId,
+    templateId,
+    recipient,
+    supabaseUrl,
+  })
 
-  const trackingPixelUrl = url.toString()
   const trackingPixel = `\n<img src="${trackingPixelUrl}" width="1" height="1" />`
   return htmlBody + trackingPixel
 }
@@ -96,7 +97,7 @@ export const sendSingleEmail = async (emailData, options = {}) => {
     emailId: emailId,
     templateId: options.templateId,
     campaignId: options.campaignId,
-    trackingUrl: settings.supabase?.trackingUrl,
+    supabaseUrl: settings.supabase?.url,
   })
 
   // Create modified email data with tracking pixel
