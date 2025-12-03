@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { sanitizeHtml } from '../utils/sanitizer'
 import { validateHTML, extractParameters } from '../utils/templateValidator'
+import RichTextEditor from './RichTextEditor'
 
 function TemplateModal({ show, onHide, onSave, template = null }) {
   const [name, setName] = useState('')
@@ -10,13 +11,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
   const [validationErrors, setValidationErrors] = useState([])
   const [nameError, setNameError] = useState('')
   const [isValid, setIsValid] = useState(true)
-
-  // Convert line breaks to <br> tags
-  const processHtmlString = html => {
-    if (!html) return ''
-    // Replace newlines with <br> tags
-    return html.replace(/\n/g, '<br>')
-  }
+  const [showRawHtml, setShowRawHtml] = useState(false)
 
   // Initialize form when template changes (edit mode) or modal opens
   useEffect(() => {
@@ -36,6 +31,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
       setValidationErrors([])
       setNameError('')
       setIsValid(true)
+      setShowRawHtml(false)
     }
   }, [show, template])
 
@@ -85,8 +81,8 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     const isNameValid = validateName(name)
 
     // Validate HTML
-    if (!htmlString.trim()) {
-      setValidationErrors(['HTML string cannot be empty'])
+    if (!htmlString.trim() || htmlString === '<p></p>') {
+      setValidationErrors(['HTML content cannot be empty'])
       setIsValid(false)
       return
     }
@@ -95,13 +91,10 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
       return
     }
 
-    // Process HTML string to convert line breaks to <br> tags
-    const processedHtmlString = processHtmlString(htmlString)
-
     const templateData = {
       name: name.trim(),
       subject: subject.trim(),
-      htmlString: processedHtmlString,
+      htmlString: htmlString,
       parameters,
     }
 
@@ -167,17 +160,42 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
             </div>
 
             <div className="mb-3">
-              <label htmlFor="htmlString" className="form-label">
-                HTML String <span className="text-danger">*</span>
-              </label>
-              <textarea
-                id="htmlString"
-                className={`form-control ${!isValid && htmlString ? 'is-invalid' : ''}`}
-                rows="10"
-                value={htmlString}
-                onChange={e => setHtmlString(e.target.value)}
-                placeholder="Enter your HTML template here. Use {{parameterName}} for dynamic values."
-              />
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <label htmlFor="htmlString" className="form-label mb-0">
+                  Email Content <span className="text-danger">*</span>
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => setShowRawHtml(!showRawHtml)}
+                >
+                  {showRawHtml ? '📝 Rich Text Editor' : '🔧 Raw HTML'}
+                </button>
+              </div>
+
+              {showRawHtml ? (
+                <>
+                  <textarea
+                    id="htmlString"
+                    className={`form-control ${!isValid && htmlString ? 'is-invalid' : ''}`}
+                    rows="10"
+                    value={htmlString}
+                    onChange={e => setHtmlString(e.target.value)}
+                    placeholder="Enter your HTML template here. Use {{parameterName}} for dynamic values."
+                  />
+                  <div className="form-text">
+                    Raw HTML mode - Use double curly braces for parameters, e.g., {'{{name}}'},
+                    {'{{email}}'}
+                  </div>
+                </>
+              ) : (
+                <RichTextEditor
+                  value={htmlString}
+                  onChange={setHtmlString}
+                  placeholder="Start typing your email content..."
+                />
+              )}
+
               {!isValid && validationErrors.length > 0 && (
                 <div className="invalid-feedback d-block">
                   <strong>Validation Errors:</strong>
@@ -188,14 +206,11 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                   </ul>
                 </div>
               )}
-              <div className="form-text">
-                Use double curly braces for parameters, e.g., {'{{name}}'}, {'{{email}}'}
-              </div>
             </div>
 
-            {htmlString && (
+            {htmlString && htmlString !== '<p></p>' && (
               <div className="mb-3">
-                <label className="form-label">HTML Preview</label>
+                <label className="form-label">Email Preview</label>
                 <div
                   className="border rounded p-3 bg-white"
                   style={{
@@ -203,13 +218,10 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                     maxHeight: '300px',
                     overflow: 'auto',
                     wordBreak: 'break-word',
-                    whiteSpace: 'pre-wrap',
                   }}
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(processHtmlString(htmlString)) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlString) }}
                 />
-                <div className="form-text">
-                  This is how your HTML will be rendered (line breaks will be preserved)
-                </div>
+                <div className="form-text">This is how your email will be rendered when sent</div>
               </div>
             )}
 
@@ -239,7 +251,13 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
               type="button"
               className="btn btn-primary"
               onClick={handleSave}
-              disabled={!isValid || !htmlString.trim() || !name.trim() || !!nameError}
+              disabled={
+                !isValid ||
+                !htmlString.trim() ||
+                htmlString === '<p></p>' ||
+                !name.trim() ||
+                !!nameError
+              }
             >
               {template ? 'Update' : 'Create'}
             </button>

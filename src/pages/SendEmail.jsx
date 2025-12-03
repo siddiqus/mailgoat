@@ -306,12 +306,18 @@ function SendEmail() {
     const file = event.target.files[0]
     if (!file) return
 
-    setUploadedFile(file)
+    // Reset all file-related state when a new file is uploaded
+    setUploadedFile(null)
+    setFileData([])
     setFileErrors([])
+    setPreviewIndex(null)
 
     try {
       const data = await parseFile(file)
       const errors = validateDataRows(data, bulkTemplate?.parameters)
+
+      // Only set the file data if parsing succeeds
+      setUploadedFile(file)
       setFileData(data)
       setFileErrors(errors)
 
@@ -322,7 +328,8 @@ function SendEmail() {
       }
     } catch (error) {
       alert(`Error parsing file: ${error.message}`)
-      setUploadedFile(null)
+      // Reset file input so user can select the same file again
+      event.target.value = ''
     }
   }
 
