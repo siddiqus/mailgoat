@@ -40,9 +40,10 @@ class EmailHistoryRepository {
   async create(emailData) {
     const history = await this.getAll()
     const newRecord = {
-      id: uuidv4(),
+      emailId: emailData.id,
       ...emailData,
-      sentAt: new Date().toISOString(),
+      id: uuidv4(), // remove id from emailData and generate history ID
+      sentAt: emailData.sentAt || new Date().toISOString(),
     }
     history.unshift(newRecord) // Add to beginning of array
     this._save(history)

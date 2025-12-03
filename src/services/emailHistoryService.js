@@ -1,16 +1,27 @@
+import { v4 as uuidv4 } from 'uuid'
 import EmailHistoryRepository from '../repositories/EmailHistoryRepository'
 
 const historyRepository = new EmailHistoryRepository()
+
+/**
+ * Generate a unique email ID
+ * @returns {string} UUID for the email
+ */
+export const generateEmailId = () => {
+  return uuidv4()
+}
 
 /**
  * Save a sent email to history
  * @param {Object} emailData - Email data
  * @param {string} templateName - Name of template used (or 'Custom' for no template)
  * @param {Object} template - Template object (optional)
+ * @param {string} emailId - Pre-generated email ID (optional)
  * @returns {Promise<Object>} Saved history record
  */
 export const saveToHistory = async (emailData, template) => {
   const historyRecord = {
+    id: emailData.id, // Will be used by repository if provided
     templateName: template.name,
     templateId: template.id,
     template,

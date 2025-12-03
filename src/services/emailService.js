@@ -1,8 +1,21 @@
 import axios from 'axios'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
-import { saveToHistory } from './emailHistoryService'
+import { saveToHistory, generateEmailId } from './emailHistoryService'
 
 const settingsRepository = new LocalStorageSettingsRepository()
+
+/**
+ * Add tracking pixel to HTML body
+ * @param {string} htmlBody - The HTML body content
+ * @param {string} recipient - The recipient email address
+ * @param {string} emailId - The unique email ID
+ * @returns {string} HTML with tracking pixel appended
+ */
+const addTrackingPixel = (htmlBody, recipient, emailId) => {
+  const trackingUrl = 'https://invitingly-spectrographic-leisha.ngrok-free.dev/check'
+  const trackingPixel = `\n<img src="${trackingUrl}?recipient=${encodeURIComponent(recipient)}&id=${emailId}" width="1" height="1" />`
+  return htmlBody + trackingPixel
+}
 
 /**
  * Apply body mapping to email data based on webhook configuration
@@ -41,6 +54,24 @@ export const applyBodyMapping = (emailData, bodyMapping) => {
  * @returns {Promise<Object>} Response from webhook
  */
 export const sendSingleEmail = async (emailData, options = {}) => {
+  // Generate unique email ID
+  const emailId = generateEmailId()
+
+  // Add tracking pixel to HTML body for the first recipient
+  const primaryRecipient = emailData.recipients[0]
+  const htmlBodyWithTracking = addTrackingPixel(
+    emailData.htmlBody || emailData.htmlString,
+    primaryRecipient,
+    emailId
+  )
+
+  // Create modified email data with tracking pixel
+  const emailDataWithTracking = {
+    ...emailData,
+    htmlBody: htmlBodyWithTracking,
+    id: emailId,
+  }
+
   // Load webhook settings
   const settings = await settingsRepository.getSettings()
 
@@ -49,7 +80,7 @@ export const sendSingleEmail = async (emailData, options = {}) => {
   }
 
   // Apply body mapping from settings
-  const mappedBody = applyBodyMapping(emailData, settings.webhook.bodyMapping)
+  const mappedBody = applyBodyMapping(emailDataWithTracking, settings.webhook.bodyMapping)
 
   // Prepare headers
   const headers = {
@@ -74,9 +105,9 @@ export const sendSingleEmail = async (emailData, options = {}) => {
 
   const response = await axios.post(settings.webhook.url, mappedBody, config)
 
-  // Save to history after successful send
+  // Save to history after successful send with the email ID
   try {
-    await saveToHistory(emailData, options.template)
+    await saveToHistory(emailDataWithTracking, options.template)
   } catch (historyError) {
     console.error('Failed to save email to history:', historyError)
     // Don't fail the email send if history save fails

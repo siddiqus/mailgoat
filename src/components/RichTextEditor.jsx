@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Color } from '@tiptap/extension-color'
+import Image from '@tiptap/extension-image'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Underline } from '@tiptap/extension-underline'
@@ -16,6 +17,14 @@ function RichTextEditor({ value, onChange, placeholder }) {
       Color,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
+      }),
+      Image.configure({
+        inline: true,
+        resize: {
+          enabled: true,
+          directions: ['top', 'bottom', 'left', 'right'],
+          alwaysPreserveAspectRatio: true,
+        },
       }),
     ],
     content: value || '',
