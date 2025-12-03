@@ -1,17 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import EmailDetailModal from '../components/EmailDetailModal'
 import TemplateDetailModal from '../components/TemplateDetailModal'
+import { getAllCampaigns } from '../services/campaignService'
 import { getAllHistory } from '../services/emailHistoryService'
-import { getTemplateById } from '../services/templateRepositoryService'
+import { getTemplateById, getAllTemplates } from '../services/templateRepositoryService'
 
 function History() {
   const [history, setHistory] = useState([])
+  const [campaigns, setCampaigns] = useState([])
+  const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedEmail, setSelectedEmail] = useState(null)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [selectedCampaignFilter, setSelectedCampaignFilter] = useState('all')
+  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState('all')
 
   useEffect(() => {
     loadHistory()
+    loadCampaigns()
+    loadTemplates()
   }, [])
 
   const loadHistory = async () => {
@@ -24,6 +31,24 @@ function History() {
       alert('Failed to load email history')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadCampaigns = async () => {
+    try {
+      const data = await getAllCampaigns()
+      setCampaigns(data)
+    } catch (error) {
+      console.error('Error loading campaigns:', error)
+    }
+  }
+
+  const loadTemplates = async () => {
+    try {
+      const data = await getAllTemplates()
+      setTemplates(data)
+    } catch (error) {
+      console.error('Error loading templates:', error)
     }
   }
 
@@ -50,6 +75,42 @@ function History() {
     return recipients
   }
 
+  const getCampaign = campaignId => {
+    if (!campaignId) return null
+    const campaign = campaigns.find(c => c.id === campaignId)
+    return campaign || { name: 'Unknown Campaign', color: '#6c757d' }
+  }
+
+  // Helper function to determine if text should be light or dark based on background
+  const getTextColor = hexColor => {
+    // Convert hex to RGB
+    const r = parseInt(hexColor.slice(1, 3), 16)
+    const g = parseInt(hexColor.slice(3, 5), 16)
+    const b = parseInt(hexColor.slice(5, 7), 16)
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return luminance > 0.5 ? '#000000' : '#ffffff'
+  }
+
+  // Filter history based on selected campaign and template
+  const filteredHistory = useMemo(() => {
+    let filtered = history
+
+    // Apply campaign filter
+    if (selectedCampaignFilter === 'none') {
+      filtered = filtered.filter(record => !record.campaignId)
+    } else if (selectedCampaignFilter !== 'all') {
+      filtered = filtered.filter(record => record.campaignId === selectedCampaignFilter)
+    }
+
+    // Apply template filter
+    if (selectedTemplateFilter !== 'all') {
+      filtered = filtered.filter(record => record.templateId === selectedTemplateFilter)
+    }
+
+    return filtered
+  }, [history, selectedCampaignFilter, selectedTemplateFilter])
+
   if (loading) {
     return (
       <div className="container mt-5">
@@ -74,85 +135,185 @@ function History() {
         </div>
       ) : (
         <div>
-          <div
-            className="border rounded"
-            style={{
-              height: 'calc(100vh - 250px)',
-              minHeight: '400px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
-              <table className="table table-hover mb-0">
-                <thead
-                  className="table-light"
-                  style={{
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 1,
-                  }}
-                >
-                  <tr>
-                    <th style={{ width: '180px' }}>Sent At</th>
-                    <th style={{ width: '150px' }}>Template</th>
-                    <th>Recipients</th>
-                    <th>CC</th>
-                    <th>Subject</th>
-                    <th style={{ width: '200px' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map(record => (
-                    <tr key={record.id}>
-                      <td className="align-middle">
-                        <small>{new Date(record.sentAt).toLocaleString()}</small>
-                      </td>
-                      <td className="align-middle">
-                        {record.templateId ? (
-                          <button
-                            className="btn btn-sm btn-link p-0 text-start"
-                            onClick={() => handleTemplateClick(record.templateId)}
-                            title="View template details"
-                          >
-                            {record.templateName}
-                          </button>
-                        ) : (
-                          <span className="text-muted">{record.templateName}</span>
-                        )}
-                      </td>
-                      <td className="align-middle">
-                        <small>{formatRecipients(record.recipients)}</small>
-                      </td>
-                      <td className="align-middle">
-                        <small>
-                          {record.ccList && record.ccList.length > 0
-                            ? formatRecipients(record.ccList)
-                            : '-'}
-                        </small>
-                      </td>
-                      <td className="align-middle">
-                        <small>{record.subject}</small>
-                      </td>
-                      <td className="align-middle">
-                        <div className="btn-group btn-group-sm">
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => setSelectedEmail(record)}
-                            title="View email"
-                          >
-                            View
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Filters */}
+          <div className="card mb-3">
+            <div className="card-body">
+              <div className="row g-3">
+                {/* Campaign Filter */}
+                <div className="col-md-6">
+                  <label className="form-label mb-2 fw-bold">Filter by Campaign:</label>
+                  <div className="d-flex align-items-center gap-2">
+                    <select
+                      className="form-select"
+                      value={selectedCampaignFilter}
+                      onChange={e => setSelectedCampaignFilter(e.target.value)}
+                    >
+                      <option value="all">All Campaigns</option>
+                      <option value="none">No Campaign</option>
+                      {campaigns.map(campaign => (
+                        <option key={campaign.id} value={campaign.id}>
+                          {campaign.name}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedCampaignFilter !== 'all' && selectedCampaignFilter !== 'none' && (
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          backgroundColor:
+                            campaigns.find(c => c.id === selectedCampaignFilter)?.color ||
+                            '#0d6efd',
+                          borderRadius: '4px',
+                          border: '1px solid #dee2e6',
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Template Filter */}
+                <div className="col-md-6">
+                  <label className="form-label mb-2 fw-bold">Filter by Template:</label>
+                  <select
+                    className="form-select"
+                    value={selectedTemplateFilter}
+                    onChange={e => setSelectedTemplateFilter(e.target.value)}
+                  >
+                    <option value="all">All Templates</option>
+                    {templates.map(template => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              {(selectedCampaignFilter !== 'all' || selectedTemplateFilter !== 'all') && (
+                <div className="mt-3">
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => {
+                      setSelectedCampaignFilter('all')
+                      setSelectedTemplateFilter('all')
+                    }}
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-          <div className="text-muted mt-2">
-            <small>Total: {history.length} email(s) sent</small>
+
+          <div>
+            <div
+              className="border rounded"
+              style={{
+                height: 'calc(100vh - 250px)',
+                minHeight: '400px',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+                <table className="table table-hover mb-0">
+                  <thead
+                    className="table-light"
+                    style={{
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 1,
+                    }}
+                  >
+                    <tr>
+                      <th style={{ width: '180px' }}>Sent At</th>
+                      <th style={{ width: '150px' }}>Template</th>
+                      <th style={{ width: '150px' }}>Campaign</th>
+                      <th>Recipients</th>
+                      <th>CC</th>
+                      <th>Subject</th>
+                      <th style={{ width: '120px' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredHistory.map(record => (
+                      <tr key={record.id}>
+                        <td className="align-middle">
+                          <small>{new Date(record.sentAt).toLocaleString()}</small>
+                        </td>
+                        <td className="align-middle">
+                          {record.templateId ? (
+                            <button
+                              className="btn btn-sm btn-link p-0 text-start"
+                              onClick={() => handleTemplateClick(record.templateId)}
+                              title="View template details"
+                            >
+                              {record.templateName}
+                            </button>
+                          ) : (
+                            <span className="text-muted">{record.templateName}</span>
+                          )}
+                        </td>
+                        <td className="align-middle">
+                          {record.campaignId ? (
+                            (() => {
+                              const campaign = getCampaign(record.campaignId)
+                              const bgColor = campaign.color || '#0d6efd'
+                              const textColor = getTextColor(bgColor)
+                              return (
+                                <span
+                                  className="badge"
+                                  style={{
+                                    backgroundColor: bgColor,
+                                    color: textColor,
+                                  }}
+                                >
+                                  {campaign.name}
+                                </span>
+                              )
+                            })()
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td className="align-middle">
+                          <small>{formatRecipients(record.recipients)}</small>
+                        </td>
+                        <td className="align-middle">
+                          <small>
+                            {record.ccList && record.ccList.length > 0
+                              ? formatRecipients(record.ccList)
+                              : '-'}
+                          </small>
+                        </td>
+                        <td className="align-middle">
+                          <small>{record.subject}</small>
+                        </td>
+                        <td className="align-middle">
+                          <div className="btn-group btn-group-sm">
+                            <button
+                              className="btn btn-outline-primary"
+                              onClick={() => setSelectedEmail(record)}
+                              title="View email"
+                            >
+                              View
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="text-muted mt-2">
+              <small>
+                Showing {filteredHistory.length} of {history.length} email(s)
+              </small>
+            </div>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
+import { getAllCampaigns } from '../services/campaignService'
 import { sendSingleEmail, sendBulkEmails } from '../services/emailService'
 import { validateDataRows, parseFile, prepareBulkEmailData } from '../services/fileParsingService'
 import { getAllTemplates } from '../services/templateRepositoryService'
@@ -18,7 +19,9 @@ const settingsRepository = new LocalStorageSettingsRepository()
 function SendEmail() {
   const [activeTab, setActiveTab] = useState('single')
   const [templates, setTemplates] = useState([])
+  const [campaigns, setCampaigns] = useState([])
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [selectedCampaign, setSelectedCampaign] = useState(null)
 
   // Single email state
   const [parameterValues, setParameterValues] = useState({})
@@ -44,9 +47,10 @@ function SendEmail() {
   const [sending, setSending] = useState(false)
   const [webhookConfigured, setWebhookConfigured] = useState(false)
 
-  // Load templates and settings on mount
+  // Load templates, campaigns, and settings on mount
   useEffect(() => {
     loadTemplates()
+    loadCampaigns()
     loadSettings()
   }, [])
 
@@ -60,6 +64,15 @@ function SendEmail() {
       alert('Failed to load templates')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadCampaigns = async () => {
+    try {
+      const data = await getAllCampaigns()
+      setCampaigns(data)
+    } catch (error) {
+      console.error('Error loading campaigns:', error)
     }
   }
 
@@ -198,11 +211,13 @@ function SendEmail() {
       try {
         await sendSingleEmail(emailData, {
           template: selectedTemplate,
+          campaignId: selectedCampaign,
         })
         alert('Email sent successfully!')
 
         // Reset form
         setSelectedTemplate(null)
+        setSelectedCampaign(null)
         setParameterValues({})
         setRecipients('')
         setCcList('')
@@ -388,6 +403,7 @@ function SendEmail() {
 
       const result = await sendBulkEmails(bulkEmailData, {
         template: bulkTemplate,
+        campaignId: selectedCampaign,
       })
       const alertString = `Emails successfully sent:\n${JSON.stringify(
         result.success,
@@ -399,6 +415,7 @@ function SendEmail() {
 
       // Reset form
       setBulkTemplate(null)
+      setSelectedCampaign(null)
       setUploadedFile(null)
       setFileData([])
       setFileErrors([])
@@ -483,24 +500,45 @@ function SendEmail() {
               <div className="col-md-5">
                 <div className="card mb-3">
                   <div className="card-header">
-                    <h5 className="mb-0">1. Select Template</h5>
+                    <h5 className="mb-0">1. Select Template & Campaign</h5>
                   </div>
                   <div className="card-body">
-                    <select
-                      className="form-select"
-                      value={selectedTemplate?.id || ''}
-                      onChange={e => {
-                        const template = templates.find(t => t.id === e.target.value)
-                        handleTemplateSelect(template || null)
-                      }}
-                    >
-                      <option value="">-- Select a template --</option>
-                      {templates.map(template => (
-                        <option key={template.id} value={template.id}>
-                          {template.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="mb-3">
+                      <label className="form-label">Template</label>
+                      <select
+                        className="form-select"
+                        value={selectedTemplate?.id || ''}
+                        onChange={e => {
+                          const template = templates.find(t => t.id === e.target.value)
+                          handleTemplateSelect(template || null)
+                        }}
+                      >
+                        <option value="">-- Select a template --</option>
+                        {templates.map(template => (
+                          <option key={template.id} value={template.id}>
+                            {template.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="form-label">Campaign (Optional)</label>
+                      <select
+                        className="form-select"
+                        value={selectedCampaign || ''}
+                        onChange={e => setSelectedCampaign(e.target.value || null)}
+                      >
+                        <option value="">-- No campaign --</option>
+                        {campaigns.map(campaign => (
+                          <option key={campaign.id} value={campaign.id}>
+                            {campaign.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="form-text">
+                        Associate this email with a campaign for tracking
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -658,7 +696,7 @@ function SendEmail() {
             <div>
               <div className="row mb-3">
                 {/* Select Template */}
-                <div className="col-md-6">
+                <div className="col-md-4">
                   <div className="card h-100">
                     <div className="card-header">
                       <h5 className="mb-0">1. Select Template</h5>
@@ -683,11 +721,35 @@ function SendEmail() {
                   </div>
                 </div>
 
-                {/* Choose Input Method */}
-                <div className="col-md-6">
+                {/* Select Campaign */}
+                <div className="col-md-4">
                   <div className="card h-100">
                     <div className="card-header">
-                      <h5 className="mb-0">2. Choose Input Method</h5>
+                      <h5 className="mb-0">2. Select Campaign</h5>
+                    </div>
+                    <div className="card-body">
+                      <select
+                        className="form-select"
+                        value={selectedCampaign || ''}
+                        onChange={e => setSelectedCampaign(e.target.value || null)}
+                      >
+                        <option value="">-- No campaign --</option>
+                        {campaigns.map(campaign => (
+                          <option key={campaign.id} value={campaign.id}>
+                            {campaign.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="form-text mt-2">Optional: Track bulk emails</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Choose Input Method */}
+                <div className="col-md-4">
+                  <div className="card h-100">
+                    <div className="card-header">
+                      <h5 className="mb-0">3. Choose Input Method</h5>
                     </div>
                     <div className="card-body">
                       <div className="btn-group w-100" role="group">
@@ -738,7 +800,7 @@ function SendEmail() {
               {bulkTemplate && bulkInputMode === 'file' && (
                 <div className="card mb-3">
                   <div className="card-header d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0">3. Upload File (CSV or Excel)</h5>
+                    <h5 className="mb-0">4. Upload File (CSV or Excel)</h5>
                     <button
                       className="btn btn-sm btn-outline-primary"
                       onClick={handleDownloadSampleCSV}
@@ -782,7 +844,7 @@ function SendEmail() {
                 <div className="card mb-3">
                   <div className="card-header d-flex justify-content-between align-items-center">
                     <h5 className="mb-0">
-                      3. Enter Recipients Manually
+                      4. Enter Recipients Manually
                       {manualEntries.length > 0 && (
                         <span className="text-muted ms-2">
                           ({manualEntries.length} recipient
@@ -924,7 +986,7 @@ function SendEmail() {
               {bulkInputMode === 'file' && fileData.length > 0 && fileErrors.length === 0 && (
                 <div className="card mb-3">
                   <div className="card-header d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0">4. Review Data ({fileData.length} records)</h5>
+                    <h5 className="mb-0">5. Review Data ({fileData.length} records)</h5>
                     <button className="btn btn-success" onClick={handleBulkSend} disabled={sending}>
                       {sending ? (
                         <>

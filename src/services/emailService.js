@@ -9,11 +9,19 @@ const settingsRepository = new LocalStorageSettingsRepository()
  * @param {string} htmlBody - The HTML body content
  * @param {string} recipient - The recipient email address
  * @param {string} emailId - The unique email ID
+ * @param {string} campaignId - The campaign ID (optional)
  * @returns {string} HTML with tracking pixel appended
  */
-const addTrackingPixel = (htmlBody, recipient, emailId) => {
+const addTrackingPixel = (htmlBody, recipient, emailId, campaignId = null) => {
   const trackingUrl = 'https://invitingly-spectrographic-leisha.ngrok-free.dev/check'
-  const trackingPixel = `\n<img src="${trackingUrl}?recipient=${encodeURIComponent(recipient)}&id=${emailId}" width="1" height="1" />`
+  let trackingPixelUrl = `${trackingUrl}?recipient=${encodeURIComponent(recipient)}&id=${emailId}`
+
+  // Add campaignId to tracking pixel if provided
+  if (campaignId) {
+    trackingPixelUrl += `&campaignId=${campaignId}`
+  }
+
+  const trackingPixel = `\n<img src="${trackingPixelUrl}" width="1" height="1" />`
   return htmlBody + trackingPixel
 }
 
@@ -50,7 +58,7 @@ export const applyBodyMapping = (emailData, bodyMapping) => {
 /**
  * Send a single email using configured webhook
  * @param {Object} emailData - Email data with recipients, ccList, subject, htmlBody
- * @param {Object} options - Additional options (template, signal)
+ * @param {Object} options - Additional options (template, signal, campaignId)
  * @returns {Promise<Object>} Response from webhook
  */
 export const sendSingleEmail = async (emailData, options = {}) => {
@@ -62,7 +70,8 @@ export const sendSingleEmail = async (emailData, options = {}) => {
   const htmlBodyWithTracking = addTrackingPixel(
     emailData.htmlBody || emailData.htmlString,
     primaryRecipient,
-    emailId
+    emailId,
+    options.campaignId
   )
 
   // Create modified email data with tracking pixel
@@ -70,6 +79,7 @@ export const sendSingleEmail = async (emailData, options = {}) => {
     ...emailData,
     htmlBody: htmlBodyWithTracking,
     id: emailId,
+    campaignId: options.campaignId || null, // Add campaignId for tracking
   }
 
   // Load webhook settings
@@ -124,14 +134,16 @@ function sleep(ms) {
  * Send bulk emails using configured webhook
  * @param {Array<Object>} bulkEmailData - Array of email data objects
  * @param {AbortSignal} signal - Optional abort signal for cancellation
- * @param {Object} options - Additional options (templateName, template)
- * @returns {Promise<Object>} Response from webhook
+ * @param {Object} options - Additional options (templateName, template, campaignId)
+ * @returns {Promise<Object>} Response from webhook with campaignId
  */
 export const sendBulkEmails = async (bulkEmailData, options = {}) => {
   const results = {
     success: [],
     failures: [],
+    campaignId: options.campaignId || null, // Include campaignId in results
   }
+
   for (const emailData of bulkEmailData) {
     // Check if operation was cancelled
     if (options.signal && options.signal.aborted) {

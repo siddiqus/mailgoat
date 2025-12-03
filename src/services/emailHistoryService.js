@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import EmailHistoryRepository from '../repositories/EmailHistoryRepository'
+import { incrementCampaignEmailCount } from './campaignService'
 
 const historyRepository = new EmailHistoryRepository()
 
@@ -30,6 +31,17 @@ export const saveToHistory = async (emailData, template) => {
     subject: emailData.subject,
     htmlBody: emailData.htmlBody || emailData.htmlString,
     status: 'sent',
+    campaignId: emailData.campaignId || null, // Include campaignId for tracking
+  }
+
+  // Increment campaign email count if campaignId is provided
+  if (emailData.campaignId) {
+    try {
+      await incrementCampaignEmailCount(emailData.campaignId)
+    } catch (error) {
+      console.error('Failed to increment campaign email count:', error)
+      // Don't fail the history save if campaign increment fails
+    }
   }
 
   return await historyRepository.create(historyRecord)
