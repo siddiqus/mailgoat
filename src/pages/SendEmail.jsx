@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { sendSingleEmail, sendBulkEmails } from '../services/emailService'
 import { validateDataRows, parseFile, prepareBulkEmailData } from '../services/fileParsingService'
 import { getAllTemplates } from '../services/templateRepositoryService'
@@ -11,6 +12,8 @@ import {
 } from '../services/templateService'
 import { validateEmailList } from '../utils/emailValidator'
 import { sanitizeHtml } from '../utils/sanitizer'
+
+const settingsRepository = new LocalStorageSettingsRepository()
 
 function SendEmail() {
   const [activeTab, setActiveTab] = useState('single')
@@ -39,10 +42,12 @@ function SendEmail() {
 
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [webhookConfigured, setWebhookConfigured] = useState(false)
 
-  // Load templates on mount
+  // Load templates and settings on mount
   useEffect(() => {
     loadTemplates()
+    loadSettings()
   }, [])
 
   const loadTemplates = async () => {
@@ -55,6 +60,17 @@ function SendEmail() {
       alert('Failed to load templates')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadSettings = async () => {
+    try {
+      const settings = await settingsRepository.getSettings()
+      const isConfigured = settings.webhook?.url && settings.webhook.url.trim() !== ''
+      setWebhookConfigured(isConfigured)
+    } catch (error) {
+      console.error('Error loading settings:', error)
+      setWebhookConfigured(false)
     }
   }
 
@@ -403,6 +419,29 @@ function SendEmail() {
   return (
     <div className="container mt-5">
       <h2 className="mb-4">Send Email</h2>
+
+      {!webhookConfigured && (
+        <div className="alert alert-warning d-flex align-items-center" role="alert">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="currentColor"
+            className="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"
+            viewBox="0 0 16 16"
+          >
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+          </svg>
+          <div>
+            <strong>Email webhook is not configured!</strong> You need to configure your email
+            webhook in the{' '}
+            <a href="/settings" className="alert-link">
+              Settings
+            </a>{' '}
+            page before you can send emails.
+          </div>
+        </div>
+      )}
 
       {templates.length === 0 ? (
         <div className="alert alert-info">
