@@ -53,7 +53,7 @@ class LocalStorageSettingsRepository {
           recipients: 'recipients',
           ccList: 'ccList',
           subject: 'subject',
-          htmlBody: 'htmlBody',
+          htmlBody: 'message',
         },
       },
       smtp: {

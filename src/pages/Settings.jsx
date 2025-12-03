@@ -14,7 +14,7 @@ function Settings() {
     recipients: 'recipients',
     ccList: 'ccList',
     subject: 'subject',
-    htmlBody: 'htmlBody',
+    htmlBody: 'message',
   })
 
   useEffect(() => {
@@ -33,7 +33,7 @@ function Settings() {
           recipients: 'recipients',
           ccList: 'ccList',
           subject: 'subject',
-          htmlBody: 'htmlBody',
+          htmlBody: 'message',
         }
       )
     } catch (error) {
@@ -222,7 +222,7 @@ function Settings() {
                       type="text"
                       className="form-control font-monospace"
                       value={bodyMapping.htmlBody}
-                      onChange={e => handleBodyMappingChange('htmlBody', e.target.value)}
+                      onChange={e => handleBodyMappingChange('message', e.target.value)}
                       placeholder="htmlBody"
                     />
                   </div>
@@ -404,7 +404,7 @@ function Settings() {
                       [bodyMapping.recipients || 'recipients']: ['email@example.com'],
                       [bodyMapping.ccList || 'ccList']: ['cc@example.com'],
                       [bodyMapping.subject || 'subject']: 'Email subject',
-                      [bodyMapping.htmlBody || 'htmlBody']: '<p>Email content</p>',
+                      [bodyMapping.htmlBody || 'message']: '<p>Email content</p>',
                     },
                     null,
                     2
