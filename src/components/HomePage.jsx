@@ -90,12 +90,6 @@ function HomePage() {
               </Link>
             </div>
           </div>
-
-          <div className="mt-5 text-center">
-            <p className="text-muted">
-              <small>Get started by creating a template or sending an email</small>
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -1,9 +1,5 @@
 import { useState, useEffect } from 'react'
-import {
-  getAllCampaigns,
-  createCampaign,
-  updateCampaign,
-} from '../services/campaignService'
+import { getAllCampaigns, createCampaign, updateCampaign } from '../services/campaignService'
 
 function Campaigns() {
   const [campaigns, setCampaigns] = useState([])
