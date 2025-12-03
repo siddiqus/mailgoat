@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { getAllCampaigns } from '../services/campaignService'
-import { sendSingleEmail, sendBulkEmails } from '../services/emailService'
+import { generateEmailId, saveToHistory } from '../services/emailHistoryService'
+import { sendSingleEmail, sendBulkEmailsAsync } from '../services/emailService'
 import { validateDataRows, parseFile, prepareBulkEmailData } from '../services/fileParsingService'
 import { getAllTemplates } from '../services/templateRepositoryService'
 import {
@@ -17,6 +19,7 @@ import { sanitizeHtml } from '../utils/sanitizer'
 const settingsRepository = new LocalStorageSettingsRepository()
 
 function SendEmail() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('single')
   const [templates, setTemplates] = useState([])
   const [campaigns, setCampaigns] = useState([])
@@ -201,11 +204,16 @@ function SendEmail() {
       const recipientList = parseEmailList(recipients)
       const ccListArray = parseEmailList(ccList)
 
+      // Generate email ID
+      const emailId = generateEmailId()
+
       const emailData = {
+        id: emailId,
         recipients: recipientList,
         ccList: ccListArray,
         subject,
         htmlBody,
+        campaignId: selectedCampaign,
       }
 
       try {
@@ -213,6 +221,14 @@ function SendEmail() {
           template: selectedTemplate,
           campaignId: selectedCampaign,
         })
+
+        // Save to history after successful send
+        try {
+          await saveToHistory(emailData, selectedTemplate)
+        } catch (historyError) {
+          console.error('Failed to save email to history:', historyError)
+        }
+
         alert('Email sent successfully!')
 
         // Reset form
@@ -393,7 +409,9 @@ function SendEmail() {
       emailCount = manualEntries.length
     }
 
-    const confirmSend = window.confirm(`You are about to send ${emailCount} emails. Continue?`)
+    const confirmSend = window.confirm(
+      `You are about to send ${emailCount} emails. The emails will be sent in the background. Continue?`
+    )
     if (!confirmSend) return
 
     setSending(true)
@@ -401,29 +419,30 @@ function SendEmail() {
       // Prepare bulk email data
       const bulkEmailData = prepareBulkEmailData(dataToSend, bulkTemplate, replaceParameters)
 
-      const result = await sendBulkEmails(bulkEmailData, {
+      // Send emails asynchronously (non-blocking)
+      await sendBulkEmailsAsync(bulkEmailData, {
         template: bulkTemplate,
         campaignId: selectedCampaign,
       })
-      const alertString = `Emails successfully sent:\n${JSON.stringify(
-        result.success,
-        null,
-        2
-      )}\n\nEmails failed: ${JSON.stringify(result.failures, null, 2)}`
-      console.log('Bulk emails sent successfully:', result)
-      alert(alertString)
 
-      // Reset form
-      setBulkTemplate(null)
-      setSelectedCampaign(null)
-      setUploadedFile(null)
-      setFileData([])
-      setFileErrors([])
-      setManualEntries([])
+      console.log(
+        `Started sending ${emailCount} emails in the background. Redirecting to History page...`
+      )
+
+      // Build query parameters for History page filters
+      const queryParams = new URLSearchParams()
+      if (bulkTemplate?.id) {
+        queryParams.set('template', bulkTemplate.id)
+      }
+      if (selectedCampaign) {
+        queryParams.set('campaign', selectedCampaign)
+      }
+
+      // Redirect to History page with filters
+      navigate(`/history?${queryParams.toString()}`)
     } catch (error) {
-      console.error('Error sending bulk emails:', error)
-      alert(`Failed to send bulk emails: ${error.message}`)
-    } finally {
+      console.error('Error initiating bulk email send:', error)
+      alert(`Failed to initiate bulk email send: ${error.message}`)
       setSending(false)
     }
   }

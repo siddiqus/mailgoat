@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import EmailDetailModal from '../components/EmailDetailModal'
 import TemplateDetailModal from '../components/TemplateDetailModal'
 import { getAllCampaigns } from '../services/campaignService'
@@ -6,14 +7,29 @@ import { getAllHistory } from '../services/emailHistoryService'
 import { getTemplateById, getAllTemplates } from '../services/templateRepositoryService'
 
 function History() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [history, setHistory] = useState([])
   const [campaigns, setCampaigns] = useState([])
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [selectedEmail, setSelectedEmail] = useState(null)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [selectedCampaignFilter, setSelectedCampaignFilter] = useState('all')
   const [selectedTemplateFilter, setSelectedTemplateFilter] = useState('all')
+
+  // Initialize filters from URL query parameters
+  useEffect(() => {
+    const campaignParam = searchParams.get('campaign')
+    const templateParam = searchParams.get('template')
+
+    if (campaignParam) {
+      setSelectedCampaignFilter(campaignParam)
+    }
+    if (templateParam) {
+      setSelectedTemplateFilter(templateParam)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     loadHistory()
@@ -31,6 +47,19 @@ function History() {
       alert('Failed to load email history')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      const data = await getAllHistory()
+      setHistory(data)
+    } catch (error) {
+      console.error('Error refreshing email history:', error)
+      alert('Failed to refresh email history')
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -92,6 +121,35 @@ function History() {
     return luminance > 0.5 ? '#000000' : '#ffffff'
   }
 
+  // Update URL when filters change
+  const handleCampaignFilterChange = value => {
+    setSelectedCampaignFilter(value)
+    const params = new URLSearchParams(searchParams)
+    if (value === 'all') {
+      params.delete('campaign')
+    } else {
+      params.set('campaign', value)
+    }
+    setSearchParams(params)
+  }
+
+  const handleTemplateFilterChange = value => {
+    setSelectedTemplateFilter(value)
+    const params = new URLSearchParams(searchParams)
+    if (value === 'all') {
+      params.delete('template')
+    } else {
+      params.set('template', value)
+    }
+    setSearchParams(params)
+  }
+
+  const handleClearFilters = () => {
+    setSelectedCampaignFilter('all')
+    setSelectedTemplateFilter('all')
+    setSearchParams({})
+  }
+
   // Filter history based on selected campaign and template
   const filteredHistory = useMemo(() => {
     let filtered = history
@@ -127,6 +185,41 @@ function History() {
     <div className="container mt-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Email History</h2>
+        <button
+          className="btn btn-primary"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          title="Refresh email history"
+        >
+          {refreshing ? (
+            <>
+              <span
+                className="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Refreshing...
+            </>
+          ) : (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                className="bi bi-arrow-clockwise me-2"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
+                />
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+              </svg>
+              Refresh
+            </>
+          )}
+        </button>
       </div>
 
       {history.length === 0 ? (
@@ -146,7 +239,7 @@ function History() {
                     <select
                       className="form-select"
                       value={selectedCampaignFilter}
-                      onChange={e => setSelectedCampaignFilter(e.target.value)}
+                      onChange={e => handleCampaignFilterChange(e.target.value)}
                     >
                       <option value="all">All Campaigns</option>
                       <option value="none">No Campaign</option>
@@ -179,7 +272,7 @@ function History() {
                   <select
                     className="form-select"
                     value={selectedTemplateFilter}
-                    onChange={e => setSelectedTemplateFilter(e.target.value)}
+                    onChange={e => handleTemplateFilterChange(e.target.value)}
                   >
                     <option value="all">All Templates</option>
                     {templates.map(template => (
@@ -194,13 +287,7 @@ function History() {
               {/* Clear Filters Button */}
               {(selectedCampaignFilter !== 'all' || selectedTemplateFilter !== 'all') && (
                 <div className="mt-3">
-                  <button
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={() => {
-                      setSelectedCampaignFilter('all')
-                      setSelectedTemplateFilter('all')
-                    }}
-                  >
+                  <button className="btn btn-sm btn-outline-secondary" onClick={handleClearFilters}>
                     Clear All Filters
                   </button>
                 </div>
@@ -230,6 +317,7 @@ function History() {
                   >
                     <tr>
                       <th style={{ width: '180px' }}>Sent At</th>
+                      <th style={{ width: '100px' }}>Status</th>
                       <th style={{ width: '150px' }}>Template</th>
                       <th style={{ width: '150px' }}>Campaign</th>
                       <th>Recipients</th>
@@ -243,6 +331,17 @@ function History() {
                       <tr key={record.id}>
                         <td className="align-middle">
                           <small>{new Date(record.sentAt).toLocaleString()}</small>
+                        </td>
+                        <td className="align-middle">
+                          {record.status === 'pending' && (
+                            <span className="badge bg-warning text-dark">Pending</span>
+                          )}
+                          {record.status === 'sent' && (
+                            <span className="badge bg-success">Sent</span>
+                          )}
+                          {record.status === 'failed' && (
+                            <span className="badge bg-danger">Failed</span>
+                          )}
                         </td>
                         <td className="align-middle">
                           {record.templateId ? (

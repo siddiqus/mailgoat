@@ -51,6 +51,30 @@ class EmailHistoryRepository {
   }
 
   /**
+   * Update an email history record
+   * @param {string} id - Email history ID
+   * @param {Object} updates - Fields to update
+   * @returns {Promise<Object|null>} Updated record or null if not found
+   */
+  async update(id, updates) {
+    const history = await this.getAll()
+    const index = history.findIndex(h => h.id === id)
+
+    if (index === -1) {
+      return null // Record not found
+    }
+
+    history[index] = {
+      ...history[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    }
+
+    this._save(history)
+    return history[index]
+  }
+
+  /**
    * Delete an email history record
    * @param {string} id - Email history ID
    * @returns {Promise<boolean>} True if deleted successfully

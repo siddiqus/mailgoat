@@ -1,6 +1,12 @@
 import axios from 'axios'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
-import { saveToHistory, generateEmailId } from './emailHistoryService'
+import { incrementCampaignEmailCount } from './campaignService'
+import {
+  saveToHistory,
+  generateEmailId,
+  createPendingHistoryRecord,
+  updateHistoryStatus,
+} from './emailHistoryService'
 
 const settingsRepository = new LocalStorageSettingsRepository()
 
@@ -115,14 +121,6 @@ export const sendSingleEmail = async (emailData, options = {}) => {
 
   const response = await axios.post(settings.webhook.url, mappedBody, config)
 
-  // Save to history after successful send with the email ID
-  try {
-    await saveToHistory(emailDataWithTracking, options.template)
-  } catch (historyError) {
-    console.error('Failed to save email to history:', historyError)
-    // Don't fail the email send if history save fails
-  }
-
   return response.data
 }
 
@@ -131,7 +129,101 @@ function sleep(ms) {
 }
 
 /**
- * Send bulk emails using configured webhook
+ * Send a single email with outbox pattern (creates pending record, sends, then updates to sent)
+ * @param {Object} emailData - Email data with recipients, ccList, subject, htmlBody
+ * @param {Object} options - Additional options (template, signal, campaignId)
+ * @param {string} historyId - History record ID to update
+ * @returns {Promise<void>}
+ */
+export const sendEmailWithOutbox = async (emailData, options = {}, historyId = null) => {
+  try {
+    // Send the email
+    await sendSingleEmail(emailData, options)
+
+    // Update status to 'sent' if historyId is provided
+    if (historyId) {
+      await updateHistoryStatus(historyId, 'sent')
+
+      // Increment campaign email count if campaignId is provided
+      if (emailData.campaignId) {
+        try {
+          await incrementCampaignEmailCount(emailData.campaignId)
+        } catch (error) {
+          console.error('Failed to increment campaign email count:', error)
+        }
+      }
+    }
+  } catch (error) {
+    // Update status to 'failed' if historyId is provided
+    if (historyId) {
+      await updateHistoryStatus(historyId, 'failed')
+    }
+    throw error
+  }
+}
+
+/**
+ * Send bulk emails using outbox pattern (non-blocking)
+ * Creates pending records first, then sends emails asynchronously
+ * @param {Array<Object>} bulkEmailData - Array of email data objects
+ * @param {Object} options - Additional options (template, campaignId)
+ * @returns {Promise<Array>} Array of created history record IDs
+ */
+export const sendBulkEmailsAsync = async (bulkEmailData, options = {}) => {
+  const historyIds = []
+
+  // First, create all pending history records
+  for (const emailData of bulkEmailData) {
+    const emailId = generateEmailId()
+    const emailDataWithId = {
+      ...emailData,
+      id: emailId,
+      campaignId: options.campaignId || null,
+    }
+
+    try {
+      const historyRecord = await createPendingHistoryRecord(emailDataWithId, options.template)
+      historyIds.push(historyRecord.id)
+    } catch (error) {
+      console.error('Failed to create pending history record:', error)
+    }
+  }
+
+  // Send emails asynchronously in the background
+  sendBulkEmailsInBackground(bulkEmailData, options, historyIds)
+
+  return historyIds
+}
+
+/**
+ * Background worker to send bulk emails (runs asynchronously)
+ * @param {Array<Object>} bulkEmailData - Array of email data objects
+ * @param {Object} options - Additional options (template, campaignId)
+ * @param {Array<string>} historyIds - Array of history record IDs
+ */
+const sendBulkEmailsInBackground = async (bulkEmailData, options, historyIds) => {
+  for (let i = 0; i < bulkEmailData.length; i++) {
+    const emailData = bulkEmailData[i]
+    const historyId = historyIds[i]
+
+    // Check if operation was cancelled
+    if (options.signal && options.signal.aborted) {
+      console.log('Bulk email send cancelled')
+      break
+    }
+
+    try {
+      await sendEmailWithOutbox(emailData, options, historyId)
+      await sleep(1000) // Rate limiting
+    } catch (error) {
+      console.error('Error sending email in background:', error)
+      // Continue with next email even if one fails
+    }
+  }
+}
+
+/**
+ * Send bulk emails using configured webhook (legacy synchronous method)
  * @param {Array<Object>} bulkEmailData - Array of email data objects
  * @param {AbortSignal} signal - Optional abort signal for cancellation
  * @param {Object} options - Additional options (templateName, template, campaignId)
@@ -152,6 +244,14 @@ export const sendBulkEmails = async (bulkEmailData, options = {}) => {
 
     try {
       await sendSingleEmail(emailData, options)
+
+      // Save to history after successful send
+      try {
+        await saveToHistory(emailData, options.template)
+      } catch (historyError) {
+        console.error('Failed to save email to history:', historyError)
+      }
+
       results.success.push(emailData.recipients)
       await sleep(1000)
     } catch (error) {

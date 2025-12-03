@@ -48,6 +48,29 @@ export const saveToHistory = async (emailData, template) => {
 }
 
 /**
+ * Create a pending history record (outbox pattern)
+ * @param {Object} emailData - Email data
+ * @param {Object} template - Template object
+ * @returns {Promise<Object>} Created pending history record
+ */
+export const createPendingHistoryRecord = async (emailData, template) => {
+  const historyRecord = {
+    id: emailData.id, // Will be used by repository if provided
+    templateName: template.name,
+    templateId: template.id,
+    template,
+    recipients: emailData.recipients,
+    ccList: emailData.ccList || [],
+    subject: emailData.subject,
+    htmlBody: emailData.htmlBody || emailData.htmlString,
+    status: 'pending',
+    campaignId: emailData.campaignId || null,
+  }
+
+  return await historyRepository.create(historyRecord)
+}
+
+/**
  * Get all email history
  * @returns {Promise<Array>} Array of email history records
  */
@@ -71,6 +94,16 @@ export const getHistoryById = async id => {
  */
 export const deleteHistory = async id => {
   return await historyRepository.delete(id)
+}
+
+/**
+ * Update email history record status
+ * @param {string} id - History record ID
+ * @param {string} status - New status ('pending', 'sent', 'failed')
+ * @returns {Promise<Object|null>} Updated record or null
+ */
+export const updateHistoryStatus = async (id, status) => {
+  return await historyRepository.update(id, { status })
 }
 
 /**
