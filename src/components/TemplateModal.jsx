@@ -10,6 +10,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
   const [parameters, setParameters] = useState([])
   const [validationErrors, setValidationErrors] = useState([])
   const [nameError, setNameError] = useState('')
+  const [subjectError, setSubjectError] = useState('')
   const [isValid, setIsValid] = useState(true)
   const [showRawHtml, setShowRawHtml] = useState(false)
 
@@ -30,6 +31,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
       setParameters([])
       setValidationErrors([])
       setNameError('')
+      setSubjectError('')
       setIsValid(true)
       setShowRawHtml(false)
     }
@@ -76,9 +78,32 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     }
   }
 
+  const validateSubject = subjectValue => {
+    const trimmedSubject = subjectValue.trim()
+    if (!trimmedSubject) {
+      setSubjectError('Subject is required')
+      return false
+    }
+    setSubjectError('')
+    return true
+  }
+
+  const handleSubjectChange = e => {
+    const newSubject = e.target.value
+    setSubject(newSubject)
+    if (newSubject) {
+      validateSubject(newSubject)
+    } else {
+      setSubjectError('')
+    }
+  }
+
   const handleSave = () => {
     // Validate name
     const isNameValid = validateName(name)
+
+    // Validate subject
+    const isSubjectValid = validateSubject(subject)
 
     // Validate HTML
     if (!htmlString.trim() || htmlString === '<p></p>') {
@@ -87,7 +112,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
       return
     }
 
-    if (!isValid || !isNameValid) {
+    if (!isValid || !isNameValid || !isSubjectValid) {
       return
     }
 
@@ -108,6 +133,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     setParameters([])
     setValidationErrors([])
     setNameError('')
+    setSubjectError('')
     setIsValid(true)
     onHide()
   }
@@ -144,19 +170,23 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
 
             <div className="mb-3">
               <label htmlFor="subject" className="form-label">
-                Subject
+                Subject <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
                 id="subject"
-                className="form-control"
+                className={`form-control ${subjectError ? 'is-invalid' : ''}`}
                 value={subject}
-                onChange={e => setSubject(e.target.value)}
+                onChange={handleSubjectChange}
                 placeholder="Enter email subject (can include {{parameters}})"
               />
-              <div className="form-text">
-                You can use parameters in the subject, e.g., Welcome {'{{name}}'} to our platform
-              </div>
+              {subjectError ? (
+                <div className="invalid-feedback d-block">{subjectError}</div>
+              ) : (
+                <div className="form-text">
+                  You can use parameters in the subject, e.g., Welcome {'{{name}}'} to our platform
+                </div>
+              )}
             </div>
 
             <div className="mb-3">
@@ -256,7 +286,9 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                 !htmlString.trim() ||
                 htmlString === '<p></p>' ||
                 !name.trim() ||
-                !!nameError
+                !subject.trim() ||
+                !!nameError ||
+                !!subjectError
               }
             >
               {template ? 'Update' : 'Create'}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import EmailDetailModal from '../components/EmailDetailModal'
+import SearchableSelect from '../components/SearchableSelect'
 import TemplateDetailModal from '../components/TemplateDetailModal'
 import { getAllCampaigns } from '../services/campaignService'
 import { getAllHistory } from '../services/emailHistoryService'
@@ -150,6 +151,33 @@ function History() {
     setSearchParams({})
   }
 
+  // Build campaign options for searchable select
+  const campaignOptions = useMemo(() => {
+    const options = [
+      { value: 'all', label: 'All Campaigns' },
+      { value: 'none', label: 'No Campaign' },
+    ]
+    campaigns.forEach(campaign => {
+      options.push({
+        value: campaign.id,
+        label: campaign.name,
+      })
+    })
+    return options
+  }, [campaigns])
+
+  // Build template options for searchable select
+  const templateOptions = useMemo(() => {
+    const options = [{ value: 'all', label: 'All Templates' }]
+    templates.forEach(template => {
+      options.push({
+        value: template.id,
+        label: template.name,
+      })
+    })
+    return options
+  }, [templates])
+
   // Filter history based on selected campaign and template
   const filteredHistory = useMemo(() => {
     let filtered = history
@@ -234,26 +262,22 @@ function History() {
               <div className="row g-3">
                 {/* Campaign Filter */}
                 <div className="col-md-6">
-                  <label className="form-label mb-2 fw-bold">Filter by Campaign:</label>
-                  <div className="d-flex align-items-center gap-2">
-                    <select
-                      className="form-select"
-                      value={selectedCampaignFilter}
-                      onChange={e => handleCampaignFilterChange(e.target.value)}
-                    >
-                      <option value="all">All Campaigns</option>
-                      <option value="none">No Campaign</option>
-                      {campaigns.map(campaign => (
-                        <option key={campaign.id} value={campaign.id}>
-                          {campaign.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="d-flex align-items-end gap-2">
+                    <div style={{ flex: 1 }}>
+                      <SearchableSelect
+                        label="Filter by Campaign:"
+                        options={campaignOptions}
+                        value={selectedCampaignFilter}
+                        onChange={handleCampaignFilterChange}
+                        placeholder="Select a campaign..."
+                        allowClear={true}
+                      />
+                    </div>
                     {selectedCampaignFilter !== 'all' && selectedCampaignFilter !== 'none' && (
                       <div
                         style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '38px',
+                          height: '38px',
                           backgroundColor:
                             campaigns.find(c => c.id === selectedCampaignFilter)?.color ||
                             '#0d6efd',
@@ -261,6 +285,7 @@ function History() {
                           border: '1px solid #dee2e6',
                           flexShrink: 0,
                         }}
+                        title={campaigns.find(c => c.id === selectedCampaignFilter)?.name}
                       />
                     )}
                   </div>
@@ -268,19 +293,14 @@ function History() {
 
                 {/* Template Filter */}
                 <div className="col-md-6">
-                  <label className="form-label mb-2 fw-bold">Filter by Template:</label>
-                  <select
-                    className="form-select"
+                  <SearchableSelect
+                    label="Filter by Template:"
+                    options={templateOptions}
                     value={selectedTemplateFilter}
-                    onChange={e => handleTemplateFilterChange(e.target.value)}
-                  >
-                    <option value="all">All Templates</option>
-                    {templates.map(template => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleTemplateFilterChange}
+                    placeholder="Select a template..."
+                    allowClear={true}
+                  />
                 </div>
               </div>
 
@@ -299,7 +319,7 @@ function History() {
             <div
               className="border rounded"
               style={{
-                height: 'calc(100vh - 250px)',
+                height: 'calc(80vh - 250px)',
                 minHeight: '400px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -410,7 +430,8 @@ function History() {
             </div>
             <div className="text-muted mt-2">
               <small>
-                Showing {filteredHistory.length} of {history.length} email(s)
+                Showing {filteredHistory.length} of {history.length} email
+                {history.length !== 1 ? 's' : ''}{' '}
               </small>
             </div>
           </div>
