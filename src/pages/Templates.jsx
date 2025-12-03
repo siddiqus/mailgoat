@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import TemplateModal from '../components/TemplateModal'
 import {
   getAllTemplates,
   createTemplate,
   updateTemplate,
   deleteTemplate,
+  exportTemplates,
+  importTemplates,
 } from '../services/templateRepositoryService'
 import { sanitizeHtml } from '../utils/sanitizer'
 
@@ -13,6 +15,7 @@ function Templates() {
   const [showModal, setShowModal] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState(null)
   const [loading, setLoading] = useState(true)
+  const fileInputRef = useRef(null)
 
   // Load templates on component mount
   useEffect(() => {
@@ -92,14 +95,82 @@ function Templates() {
     setEditingTemplate(null)
   }
 
+  const handleExport = async () => {
+    try {
+      const jsonData = await exportTemplates()
+      const blob = new Blob([jsonData], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `templates_export_${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting templates:', error)
+      alert('Failed to export templates')
+    }
+  }
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleImportFile = async event => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      const result = await importTemplates(text, true) // merge mode
+
+      if (result.errors.length > 0) {
+        const errorMsg = `Import completed with warnings:\n\nSuccessfully imported: ${result.success} template(s)\n\nErrors:\n${result.errors.join('\n')}`
+        alert(errorMsg)
+      } else {
+        alert(`Successfully imported ${result.success} template(s)`)
+      }
+
+      await loadTemplates()
+      // Reset file input
+      event.target.value = ''
+    } catch (error) {
+      console.error('Error importing templates:', error)
+      alert(`Failed to import templates: ${error.message}`)
+      event.target.value = ''
+    }
+  }
+
   return (
     <div className="container mt-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Templates</h2>
-        <button className="btn btn-primary" onClick={handleCreateClick}>
-          Create New Template
-        </button>
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-secondary" onClick={handleImportClick}>
+            Import Templates
+          </button>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={handleExport}
+            disabled={templates.length === 0}
+          >
+            Export Templates
+          </button>
+          <button className="btn btn-primary" onClick={handleCreateClick}>
+            Create New Template
+          </button>
+        </div>
       </div>
+
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleImportFile}
+      />
 
       {loading ? (
         <div className="text-center py-5">
@@ -122,8 +193,10 @@ function Templates() {
                   </h5>
 
                   <div className="mb-2">
-                    <small className="text-muted">ID:</small>
-                    <div className="text-muted small font-monospace">{template.id}</div>
+                    <div className="text-muted small font-monospace">
+                      <small className="text-muted">ID: </small>
+                      {template.id}
+                    </div>
                   </div>
 
                   {template.subject && (
@@ -161,8 +234,10 @@ function Templates() {
                   )}
 
                   <div className="text-muted small">
-                    <div>Created: {new Date(template.createdAt).toLocaleDateString()}</div>
-                    <div>Updated: {new Date(template.updatedAt).toLocaleDateString()}</div>
+                    <div>
+                      Created: {new Date(template.createdAt).toLocaleDateString()}, Updated:{' '}
+                      {new Date(template.updatedAt).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
                 <div className="card-footer bg-white">
