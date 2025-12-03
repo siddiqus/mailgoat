@@ -12,21 +12,35 @@ const settingsRepository = new LocalStorageSettingsRepository()
 
 /**
  * Add tracking pixel to HTML body
- * @param {string} htmlBody - The HTML body content
- * @param {string} recipient - The recipient email address
- * @param {string} emailId - The unique email ID
- * @param {string} campaignId - The campaign ID (optional)
+ * @param {Object} params - Parameters object
+ * @param {string} params.htmlBody - The HTML body content
+ * @param {string} params.recipient - The recipient email address
+ * @param {string} params.emailId - The unique email ID
+ * @param {string} params.templateId - The template ID (optional)
+ * @param {string} params.campaignId - The campaign ID (optional)
+ * @param {string} params.trackingUrl - The tracking URL from Supabase config
  * @returns {string} HTML with tracking pixel appended
  */
-const addTrackingPixel = (htmlBody, recipient, emailId, campaignId = null) => {
-  const trackingUrl = 'https://invitingly-spectrographic-leisha.ngrok-free.dev/check'
-  let trackingPixelUrl = `${trackingUrl}?recipient=${encodeURIComponent(recipient)}&id=${emailId}`
-
-  // Add campaignId to tracking pixel if provided
-  if (campaignId) {
-    trackingPixelUrl += `&campaignId=${campaignId}`
+const addTrackingPixel = ({
+  htmlBody,
+  recipient,
+  emailId,
+  templateId,
+  campaignId,
+  trackingUrl,
+}) => {
+  // Skip adding pixel if no tracking URL is configured
+  if (!trackingUrl) {
+    return htmlBody
   }
 
+  const url = new URL(trackingUrl)
+  url.searchParams.set('recipient', recipient)
+  url.searchParams.set('emailId', emailId)
+  if (templateId) url.searchParams.set('templateId', templateId)
+  if (campaignId) url.searchParams.set('campaignId', campaignId)
+
+  const trackingPixelUrl = url.toString()
   const trackingPixel = `\n<img src="${trackingPixelUrl}" width="1" height="1" />`
   return htmlBody + trackingPixel
 }
@@ -71,14 +85,19 @@ export const sendSingleEmail = async (emailData, options = {}) => {
   // Generate unique email ID
   const emailId = generateEmailId()
 
+  // Load settings to get tracking URL and webhook config
+  const settings = await settingsRepository.getSettings()
+
   // Add tracking pixel to HTML body for the first recipient
   const primaryRecipient = emailData.recipients[0]
-  const htmlBodyWithTracking = addTrackingPixel(
-    emailData.htmlBody || emailData.htmlString,
-    primaryRecipient,
-    emailId,
-    options.campaignId
-  )
+  const htmlBodyWithTracking = addTrackingPixel({
+    htmlBody: emailData.htmlBody || emailData.htmlString,
+    recipient: primaryRecipient,
+    emailId: emailId,
+    templateId: options.templateId,
+    campaignId: options.campaignId,
+    trackingUrl: settings.supabase?.trackingUrl,
+  })
 
   // Create modified email data with tracking pixel
   const emailDataWithTracking = {
@@ -87,9 +106,6 @@ export const sendSingleEmail = async (emailData, options = {}) => {
     id: emailId,
     campaignId: options.campaignId || null, // Add campaignId for tracking
   }
-
-  // Load webhook settings
-  const settings = await settingsRepository.getSettings()
 
   if (!settings.webhook.url) {
     throw new Error('Webhook URL not configured. Please configure it in Settings.')
