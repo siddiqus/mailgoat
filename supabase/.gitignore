@@ -1,0 +1,15 @@
+# Supabase local development
+.branches
+.temp
+.env.local
+.env
+
+# Function build artifacts
+functions/**/.build
+functions/**/node_modules
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
