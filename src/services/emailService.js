@@ -203,7 +203,10 @@ export const sendBulkEmailsAsync = async (bulkEmailData, options = {}) => {
  */
 const sendBulkEmailsInBackground = async (bulkEmailData, options, historyIds) => {
   for (let i = 0; i < bulkEmailData.length; i++) {
-    const emailData = bulkEmailData[i]
+    const emailData = {
+      ...bulkEmailData[i],
+      campaignId: options.campaignId || null, // Add campaignId to each email data
+    }
     const historyId = historyIds[i]
 
     // Check if operation was cancelled
