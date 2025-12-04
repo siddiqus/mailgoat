@@ -13,45 +13,39 @@ export async function getEmailAnalytics({ campaignId, templateId }) {
     throw new Error('At least one of campaignId or templateId must be provided')
   }
 
-  try {
-    const supabase = await getSupabaseClient()
+  const supabase = await getSupabaseClient()
 
-    console.log('Fetching analytics with filters:', { campaignId, templateId })
+  console.log('Fetching analytics with filters:', { campaignId, templateId })
 
-    // Build query using Supabase JS client
-    let query = supabase.from('email_interactions').select('*')
+  // Call the edge function
+  const { data, error } = await supabase.functions.invoke('get-email-interactions', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      campaignId,
+      templateId,
+    }),
+  })
 
-    if (campaignId) {
-      query = query.eq('campaign_id', campaignId)
-    }
-
-    if (templateId) {
-      query = query.eq('template_id', templateId)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Supabase query error:', error)
-      throw new Error(`Failed to fetch analytics: ${error.message}`)
-    }
-
-    console.log(`Successfully fetched ${data?.length || 0} email interactions`)
-
-    return {
-      success: true,
-      data: data || [],
-      count: data?.length || 0,
-    }
-  } catch (error) {
-    console.error('Error fetching email analytics:', error)
-
-    // Re-throw if it's already our custom error
-    if (error.message.includes('Supabase configuration')) {
-      throw error
-    }
-
+  if (error) {
+    console.error('Edge function error:', error)
     throw new Error(`Failed to fetch analytics: ${error.message}`)
+  }
+
+  // Check if the response contains an error
+  if (data?.error) {
+    console.error('Edge function returned error:', data.error)
+    throw new Error(`Failed to fetch analytics: ${data.details || data.error}`)
+  }
+
+  console.log(`Successfully fetched ${data?.count || 0} email interactions`)
+
+  return {
+    success: data?.success ?? true,
+    data: data?.data || [],
+    count: data?.count || 0,
   }
 }
 

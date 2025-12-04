@@ -26,14 +26,21 @@ CREATE INDEX IF NOT EXISTS idx_email_interaction_recipient ON public.email_inter
 -- Enable Row Level Security
 ALTER TABLE public.email_interactions ENABLE ROW LEVEL SECURITY;
 
--- Allow all inserts (including anonymous) - effectively bypassing RLS for writes
-CREATE POLICY "Allow service role to only insert email interactions"
+-- Allow service role to insert email interactions
+CREATE POLICY "Allow service role to insert email interactions"
 ON public.email_interactions
 FOR INSERT
 TO service_role
 WITH CHECK (true);
 
--- Restrict reads to authenticated users only
+-- Allow service role to read all email interactions
+CREATE POLICY "Allow service role to read email interactions"
+ON public.email_interactions
+FOR SELECT
+TO service_role
+USING (true);
+
+-- Allow anonymous users to read email interactions (no insert)
 CREATE POLICY "Allow anonymous users to read email interactions"
 ON public.email_interactions
 FOR SELECT
