@@ -24,6 +24,9 @@ function Settings() {
   const [supabaseUrl, setSupabaseUrl] = useState('')
   const [supabaseKey, setSupabaseKey] = useState('')
 
+  // Import/Export state
+  const [importing, setImporting] = useState(false)
+
   useEffect(() => {
     loadSettings()
   }, [])
@@ -176,6 +179,120 @@ function Settings() {
     }
   }
 
+  const handleExportSettings = () => {
+    try {
+      // Get current settings
+      const exportData = {
+        ...settings,
+        exportedAt: new Date().toISOString(),
+        version: '1.0',
+      }
+
+      // Create a blob with the JSON data
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json',
+      })
+
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `mailgoat-settings-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      alert('Settings exported successfully!')
+    } catch (error) {
+      console.error('Error exporting settings:', error)
+      alert('Failed to export settings')
+    }
+  }
+
+  const handleImportSettings = event => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setImporting(true)
+    const reader = new FileReader()
+
+    reader.onload = async e => {
+      try {
+        const importedData = JSON.parse(e.target.result)
+
+        // Validate the imported data
+        if (!importedData || typeof importedData !== 'object') {
+          throw new Error('Invalid settings file format')
+        }
+
+        // Validate required fields
+        const requiredFields = ['webhook', 'supabase']
+        for (const field of requiredFields) {
+          if (!importedData[field]) {
+            throw new Error(`Missing required field: ${field}`)
+          }
+        }
+
+        // Merge with default settings to ensure all fields exist
+        const validatedSettings = {
+          emailProvider: importedData.emailProvider || 'webhook',
+          webhook: {
+            url: importedData.webhook?.url || '',
+            headers: Array.isArray(importedData.webhook?.headers)
+              ? importedData.webhook.headers
+              : [],
+            bodyMapping: {
+              recipients: importedData.webhook?.bodyMapping?.recipients || 'recipients',
+              ccList: importedData.webhook?.bodyMapping?.ccList || 'ccList',
+              subject: importedData.webhook?.bodyMapping?.subject || 'subject',
+              htmlBody: importedData.webhook?.bodyMapping?.htmlBody || 'message',
+            },
+          },
+          smtp: {
+            host: importedData.smtp?.host || '',
+            port: importedData.smtp?.port || 587,
+            secure: importedData.smtp?.secure || false,
+            username: importedData.smtp?.username || '',
+            password: importedData.smtp?.password || '',
+            fromEmail: importedData.smtp?.fromEmail || '',
+            fromName: importedData.smtp?.fromName || '',
+          },
+          supabase: {
+            url: importedData.supabase?.url || '',
+            key: importedData.supabase?.key || '',
+          },
+          createdAt: importedData.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+
+        // Save the imported settings
+        await settingsRepository.saveSettings(validatedSettings)
+
+        // Reload settings from storage
+        await loadSettings()
+
+        alert('Settings imported successfully! The page will reload.')
+        window.location.reload()
+      } catch (error) {
+        console.error('Error importing settings:', error)
+        alert(`Failed to import settings: ${error.message}`)
+      } finally {
+        setImporting(false)
+        // Reset file input
+        event.target.value = ''
+      }
+    }
+
+    reader.onerror = () => {
+      alert('Failed to read file')
+      setImporting(false)
+      event.target.value = ''
+    }
+
+    reader.readAsText(file)
+  }
+
   if (loading) {
     return (
       <div className="container mt-5">
@@ -208,6 +325,14 @@ function Settings() {
             onClick={() => setActiveTab('supabase')}
           >
             Supabase Integration
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
+            className={`nav-link ${activeTab === 'import-export' ? 'active' : ''}`}
+            onClick={() => setActiveTab('import-export')}
+          >
+            Import/Export
           </button>
         </li>
       </ul>
@@ -633,6 +758,115 @@ function Settings() {
                     </div>
                   </>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import/Export Tab */}
+      {activeTab === 'import-export' && (
+        <div className="row">
+          <div className="col-lg-8">
+            <div className="card mb-4">
+              <div className="card-header">
+                <h5 className="mb-0">Export Settings</h5>
+              </div>
+              <div className="card-body">
+                <p className="text-muted">
+                  Download all your current settings as a JSON file. This includes:
+                </p>
+                <ul className="text-muted">
+                  <li>Webhook configuration (URL, headers, body mapping)</li>
+                  <li>Supabase integration settings</li>
+                  <li>SMTP settings (if configured)</li>
+                </ul>
+                <button className="btn btn-primary" onClick={handleExportSettings}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    className="bi bi-download me-2"
+                    viewBox="0 0 16 16"
+                  >
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+                  </svg>
+                  Download Settings
+                </button>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header">
+                <h5 className="mb-0">Import Settings</h5>
+              </div>
+              <div className="card-body">
+                <p className="text-muted">
+                  Upload a previously exported settings JSON file to restore your configuration.
+                </p>
+                <div className="alert alert-warning">
+                  <strong>Warning:</strong> Importing settings will overwrite all your current
+                  settings. Make sure to export your current settings first if you want to keep a
+                  backup.
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="import-file" className="form-label">
+                    Select Settings File
+                  </label>
+                  <input
+                    id="import-file"
+                    type="file"
+                    className="form-control"
+                    accept=".json,application/json"
+                    onChange={handleImportSettings}
+                    disabled={importing}
+                  />
+                </div>
+                {importing && (
+                  <div className="text-center py-3">
+                    <div className="spinner-border spinner-border-sm me-2" role="status">
+                      <span className="visually-hidden">Importing...</span>
+                    </div>
+                    <span>Importing settings...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Info Panel */}
+          <div className="col-lg-4">
+            <div className="card sticky-top" style={{ top: '20px' }}>
+              <div className="card-header">
+                <h6 className="mb-0">About Import/Export</h6>
+              </div>
+              <div className="card-body">
+                <h6 className="small fw-bold">Export</h6>
+                <p className="small text-muted">
+                  Creates a JSON file containing all your settings. The file will be named with the
+                  current date for easy organization.
+                </p>
+
+                <h6 className="small fw-bold mt-3">Import</h6>
+                <p className="small text-muted">
+                  Restores settings from a previously exported JSON file. The import process
+                  validates the file structure to ensure compatibility.
+                </p>
+
+                <h6 className="small fw-bold mt-3">Use Cases</h6>
+                <ul className="small text-muted mb-0">
+                  <li>Backup settings before making changes</li>
+                  <li>Transfer settings between different environments</li>
+                  <li>Share configuration with team members</li>
+                  <li>Quick recovery if settings get misconfigured</li>
+                </ul>
+
+                <div className="alert alert-info mt-3 small mb-0">
+                  <strong>Tip:</strong> Settings are stored in your browser's localStorage. Regular
+                  exports help prevent data loss if you clear your browser data.
+                </div>
               </div>
             </div>
           </div>
