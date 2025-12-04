@@ -42,7 +42,7 @@ const addTrackingPixel = ({
     supabaseUrl,
   })
 
-  const trackingPixel = `\n<img src="${trackingPixelUrl}" width="1" height="1" />`
+  const trackingPixel = `\n<img src="${trackingPixelUrl}" width="1" height="1" style="display:none;"/>`
   return htmlBody + trackingPixel
 }
 
@@ -89,13 +89,16 @@ export const sendSingleEmail = async (emailData, options = {}) => {
   // Load settings to get tracking URL and webhook config
   const settings = await settingsRepository.getSettings()
 
+  // Extract templateId from options.template or options.templateId
+  const templateId = options.template?.id || options.templateId
+
   // Add tracking pixel to HTML body for the first recipient
   const primaryRecipient = emailData.recipients[0]
   const htmlBodyWithTracking = addTrackingPixel({
     htmlBody: emailData.htmlBody || emailData.htmlString,
     recipient: primaryRecipient,
     emailId: emailId,
-    templateId: options.templateId,
+    templateId: templateId,
     campaignId: options.campaignId,
     supabaseUrl: settings.supabase?.url,
   })
