@@ -1,0 +1,45 @@
+/* Modern Card Component */
+.modern-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: none;
+  overflow: hidden;
+}
+
+.modern-card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modern-card-header h5,
+.modern-card-header h6 {
+  margin-bottom: 0;
+}
+
+.modern-card-body {
+  padding: 1.5rem;
+}
+
+/* Sticky card variant */
+.modern-card.sticky {
+  position: sticky;
+  top: 20px;
+}
+
+/* No padding variant */
+.modern-card.no-padding .modern-card-body {
+  padding: 0;
+}
+
+/* Mobile adjustments */
+@media (max-width: 767.98px) {
+  .modern-card.sticky {
+    position: relative !important;
+  }
+
+  .modern-card-header,
+  .modern-card-body {
+    padding: 1rem;
+  }
+}

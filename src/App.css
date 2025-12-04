@@ -1,0 +1,74 @@
+/* Global styles for mobile responsiveness */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.App {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Ensure container doesn't overflow on mobile */
+.container {
+  max-width: 100%;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* Fix for pre tags that might overflow */
+pre {
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Ensure form controls don't overflow */
+.form-control,
+.form-select,
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 767.98px) {
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  /* Reduce padding on mobile */
+  .py-5 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* Make cards stack properly */
+  .row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .row > * {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Ensure sticky elements don't cause issues */
+  .sticky-top {
+    position: relative !important;
+  }
+}

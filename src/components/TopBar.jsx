@@ -1,6 +1,16 @@
 import { Link } from 'react-router-dom'
 
 function TopBar() {
+  const closeNavbar = () => {
+    const navbarCollapse = document.getElementById('navbarNav')
+    if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+      const navbarToggler = document.querySelector('.navbar-toggler')
+      if (navbarToggler) {
+        navbarToggler.click()
+      }
+    }
+  }
+
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
       <div className="container">
@@ -22,37 +32,37 @@ function TopBar() {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto">
             <li className="nav-item mx-3">
-              <Link className="nav-link" to="/">
+              <Link className="nav-link" to="/" onClick={closeNavbar}>
                 Home
               </Link>
             </li>
             <li className="nav-item mx-3">
-              <Link className="nav-link" to="/templates">
+              <Link className="nav-link" to="/templates" onClick={closeNavbar}>
                 Templates
               </Link>
             </li>
             <li className="nav-item mx-3">
-              <Link className="nav-link" to="/campaigns">
+              <Link className="nav-link" to="/campaigns" onClick={closeNavbar}>
                 Campaigns
               </Link>
             </li>
             <li className="nav-item mx-3">
-              <Link className="nav-link" to="/send-email">
+              <Link className="nav-link" to="/send-email" onClick={closeNavbar}>
                 Send Email
               </Link>
             </li>
             <li className="nav-item mx-3">
-              <Link className="nav-link" to="/history">
+              <Link className="nav-link" to="/history" onClick={closeNavbar}>
                 History
               </Link>
             </li>
             <li className="nav-item mx-3">
-              <Link className="nav-link" to="/analytics">
+              <Link className="nav-link" to="/analytics" onClick={closeNavbar}>
                 Analytics
               </Link>
             </li>
             <li className="nav-item mx-3">
-              <Link className="nav-link" to="/settings">
+              <Link className="nav-link" to="/settings" onClick={closeNavbar}>
                 Settings
               </Link>
             </li>

@@ -1,0 +1,105 @@
+/* Settings Page Styles */
+.settings-container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding-bottom: 3rem;
+}
+
+.settings-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 15px;
+}
+
+.settings-loading {
+  text-align: center;
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+/* Tabs */
+.settings-content {
+  margin-top: 1.5rem;
+}
+
+.settings-tabs {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settings-tab-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  color: #6c757d;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-tab-button:hover:not(.active) {
+  background-color: #f8f9fa;
+}
+
+.settings-tab-button.active {
+  background-color: #0d6efd;
+  color: white;
+  font-weight: 600;
+}
+
+/* Cards */
+.settings-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.settings-card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.settings-card-body {
+  padding: 1.5rem;
+}
+
+.settings-card.settings-sticky {
+  position: sticky;
+  top: 20px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 767.98px) {
+  .settings-inner {
+    padding: 2rem 10px;
+  }
+
+  .settings-tabs {
+    flex-direction: column;
+  }
+
+  .settings-tab-button {
+    font-size: 0.85rem;
+  }
+
+  .settings-card.settings-sticky {
+    position: relative !important;
+  }
+
+  .settings-card-header,
+  .settings-card-body {
+    padding: 1rem;
+  }
+}
