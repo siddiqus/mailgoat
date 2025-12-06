@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  replaceParameters,
-  parseEmailList,
-  prepareEmailFromTemplate,
-  generateSampleCSV,
-} from './templateService'
+import { replaceParameters, prepareEmailFromTemplate, generateSampleCSV } from './templateService'
 
 describe('templateService', () => {
   describe('replaceParameters', () => {
@@ -32,22 +27,6 @@ describe('templateService', () => {
     it('should replace the same parameter multiple times', () => {
       const result = replaceParameters('{{name}} and {{name}} again', { name: 'John' })
       expect(result).toBe('John and John again')
-    })
-  })
-
-  describe('parseEmailList', () => {
-    it('should parse comma-separated emails', () => {
-      const result = parseEmailList('a@test.com, b@test.com')
-      expect(result).toEqual(['a@test.com', 'b@test.com'])
-    })
-
-    it('should parse semicolon-separated emails', () => {
-      const result = parseEmailList('a@test.com; b@test.com')
-      expect(result).toEqual(['a@test.com', 'b@test.com'])
-    })
-
-    it('should handle empty string', () => {
-      expect(parseEmailList('')).toEqual([])
     })
   })
 

@@ -15,19 +15,6 @@ export const replaceParameters = (text, values) => {
 }
 
 /**
- * Parse email addresses from a string (comma or semicolon separated)
- * @param {string} emailString - String with email addresses
- * @returns {Array<string>} Array of email addresses
- */
-export const parseEmailList = emailString => {
-  if (!emailString || !emailString.trim()) return []
-  return emailString
-    .split(/[,;]/)
-    .map(email => email.trim())
-    .filter(Boolean)
-}
-
-/**
  * Prepare email data from template and parameter values
  * @param {Object} template - Email template
  * @param {Object} parameterValues - Parameter values

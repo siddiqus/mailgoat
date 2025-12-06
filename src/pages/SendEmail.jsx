@@ -1,20 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '../components/PageContainer'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { getAllCampaigns } from '../services/campaignService'
-import { generateEmailId, saveToHistory } from '../services/emailHistoryService'
-import { sendSingleEmail, sendBulkEmailsAsync } from '../services/emailService'
-import { validateDataRows, parseFile, prepareBulkEmailData } from '../services/fileParsingService'
+import { saveToHistory } from '../services/emailHistoryService'
+import {
+  prepareBulkEmailData,
+  sendBulkEmailsAsync,
+  sendSingleEmail,
+} from '../services/emailService'
+import { parseFile, validateDataRows } from '../services/fileParsingService'
 import { getAllTemplates } from '../services/templateRepositoryService'
 import {
-  replaceParameters,
-  parseEmailList,
-  prepareEmailFromTemplate,
-  generateSampleCSV,
   downloadCSV,
+  generateSampleCSV,
+  prepareEmailFromTemplate,
 } from '../services/templateService'
-import { validateEmailList } from '../utils/emailValidator'
+import { parseEmailList, validateEmailList } from '../utils/emailUtils'
 import { sanitizeHtml } from '../utils/sanitizer'
 
 const settingsRepository = new LocalStorageSettingsRepository()
@@ -206,10 +208,7 @@ function SendEmail() {
       const ccListArray = parseEmailList(ccList)
 
       // Generate email ID
-      const emailId = generateEmailId()
-
       const emailData = {
-        id: emailId,
         recipients: recipientList,
         ccList: ccListArray,
         subject,
@@ -218,14 +217,14 @@ function SendEmail() {
       }
 
       try {
-        await sendSingleEmail(emailData, {
+        const sentEmail = await sendSingleEmail(emailData, {
           template: selectedTemplate,
           campaignId: selectedCampaign,
         })
 
         // Save to history after successful send
         try {
-          await saveToHistory(emailData, selectedTemplate)
+          await saveToHistory(sentEmail, selectedTemplate)
         } catch (historyError) {
           console.error('Failed to save email to history:', historyError)
         }
@@ -418,7 +417,7 @@ function SendEmail() {
     setSending(true)
     try {
       // Prepare bulk email data
-      const bulkEmailData = prepareBulkEmailData(dataToSend, bulkTemplate, replaceParameters)
+      const bulkEmailData = prepareBulkEmailData(dataToSend, bulkTemplate)
 
       // Send emails asynchronously (non-blocking)
       await sendBulkEmailsAsync(bulkEmailData, {

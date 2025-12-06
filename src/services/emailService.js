@@ -1,5 +1,6 @@
 import axios from 'axios'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
+import { parseEmailList } from '../utils/emailUtils'
 import { getTrackingPixelUrl } from './analyticsService'
 import { incrementCampaignEmailCount } from './campaignService'
 import {
@@ -8,6 +9,7 @@ import {
   createPendingHistoryRecord,
   updateHistoryStatus,
 } from './emailHistoryService'
+import { replaceParameters } from './templateService'
 
 const settingsRepository = new LocalStorageSettingsRepository()
 
@@ -42,7 +44,7 @@ const addTrackingPixel = ({
     supabaseUrl,
   })
 
-  const trackingPixel = `\n<img src="${trackingPixelUrl}" width="1" height="1" style="display:none;"/>`
+  const trackingPixel = `\n<img src="${trackingPixelUrl}" width="10" height="10" style="display:none;"/>`
   return htmlBody + trackingPixel
 }
 
@@ -83,8 +85,8 @@ export const applyBodyMapping = (emailData, bodyMapping) => {
  * @returns {Promise<Object>} Response from webhook
  */
 export const sendSingleEmail = async (emailData, options = {}) => {
-  // Generate unique email ID
-  const emailId = generateEmailId()
+  // Use existing email ID if provided, otherwise generate a new one
+  const emailId = emailData.id || generateEmailId()
 
   // Load settings to get tracking URL and webhook config
   const settings = await settingsRepository.getSettings()
@@ -107,8 +109,6 @@ export const sendSingleEmail = async (emailData, options = {}) => {
   const emailDataWithTracking = {
     ...emailData,
     htmlBody: htmlBodyWithTracking,
-    id: emailId,
-    campaignId: options.campaignId || null, // Add campaignId for tracking
   }
 
   if (!settings.webhook.url) {
@@ -139,9 +139,12 @@ export const sendSingleEmail = async (emailData, options = {}) => {
     config.signal = options.signal
   }
 
-  const response = await axios.post(settings.webhook.url, mappedBody, config)
+  await axios.post(settings.webhook.url, mappedBody, config)
 
-  return response.data
+  return {
+    ...emailData,
+    id: emailId,
+  }
 }
 
 function sleep(ms) {
@@ -192,12 +195,14 @@ export const sendEmailWithOutbox = async (emailData, options = {}, historyId = n
 export const sendBulkEmailsAsync = async (bulkEmailData, options = {}) => {
   const historyIds = []
 
+  bulkEmailData.forEach(email => {
+    email.id = generateEmailId()
+  })
+
   // First, create all pending history records
   for (const emailData of bulkEmailData) {
-    const emailId = generateEmailId()
     const emailDataWithId = {
-      ...emailData,
-      id: emailId,
+      ...emailData, // contains id
       campaignId: options.campaignId || null,
     }
 
@@ -328,4 +333,29 @@ export const testWebhook = async (webhookUrl, webhookHeaders, bodyMapping) => {
     status: response.status,
     data: response.ok ? await response.json() : null,
   }
+}
+
+/**
+ * Prepare bulk email data from data rows and template
+ * @param {Array} dataRows - Data rows
+ * @param {Object} template - Email template
+ * @param {Function} replaceParameters - Function to replace parameters
+ * @returns {Array} Bulk email data
+ */
+export const prepareBulkEmailData = (dataRows, template) => {
+  return dataRows.map(row => {
+    const emailSubject = replaceParameters(template.subject || '', row)
+    const emailBody = replaceParameters(template.htmlString || '', row)
+
+    const recipientList = parseEmailList(row.recipient)
+
+    const ccListArray = parseEmailList(row.cc)
+
+    return {
+      recipients: recipientList,
+      ccList: ccListArray,
+      subject: emailSubject,
+      htmlString: emailBody,
+    }
+  })
 }

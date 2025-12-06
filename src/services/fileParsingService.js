@@ -1,7 +1,6 @@
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
-import { isValidEmail } from '../utils/emailValidator'
-import { parseEmailList } from './templateService'
+import { isValidEmail, parseEmailList } from '../utils/emailUtils'
 
 /**
  * Validate data rows against template parameters
@@ -166,31 +165,4 @@ export const parseFile = async file => {
   } else {
     throw new Error('Unsupported file format. Please upload a CSV or Excel file.')
   }
-}
-
-/**
- * Prepare bulk email data from data rows and template
- * @param {Array} dataRows - Data rows
- * @param {Object} template - Email template
- * @param {Function} replaceParameters - Function to replace parameters
- * @returns {Array} Bulk email data
- */
-export const prepareBulkEmailData = (dataRows, template, replaceParameters) => {
-  return dataRows.map(row => {
-    const emailSubject = replaceParameters(template.subject || '', row)
-    const emailBody = replaceParameters(template.htmlString || '', row)
-
-    // Parse multiple recipients (separated by comma or semicolon)
-    const recipientList = parseEmailList(row.recipient)
-
-    // Parse multiple CC emails (separated by comma or semicolon)
-    const ccListArray = row.cc && row.cc.trim() ? parseEmailList(row.cc) : []
-
-    return {
-      recipients: recipientList,
-      ccList: ccListArray,
-      subject: emailSubject,
-      htmlString: emailBody,
-    }
-  })
 }

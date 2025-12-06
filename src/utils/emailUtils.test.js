@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isValidEmail, parseEmailList, validateEmailList } from './emailValidator'
+import { isValidEmail, parseEmailList, validateEmailList } from './emailUtils'
 
 describe('emailValidator', () => {
   describe('isValidEmail', () => {
@@ -75,6 +75,22 @@ describe('emailValidator', () => {
       const result = validateEmailList('invalid1, invalid2@, @invalid3')
       expect(result.isValid).toBe(false)
       expect(result.invalidEmails.length).toBe(3)
+    })
+  })
+
+  describe('parseEmailList', () => {
+    it('should parse comma-separated emails', () => {
+      const result = parseEmailList('a@test.com, b@test.com')
+      expect(result).toEqual(['a@test.com', 'b@test.com'])
+    })
+
+    it('should parse semicolon-separated emails', () => {
+      const result = parseEmailList('a@test.com; b@test.com')
+      expect(result).toEqual(['a@test.com', 'b@test.com'])
+    })
+
+    it('should handle empty string', () => {
+      expect(parseEmailList('')).toEqual([])
     })
   })
 })
