@@ -428,7 +428,7 @@ function Analytics() {
               </div>
             ) : (
               <div
-                className="border rounded"
+                className="rounded"
                 style={{
                   height: '400px',
                   overflow: 'auto',
@@ -436,7 +436,6 @@ function Analytics() {
               >
                 <table className="table table-hover mb-0">
                   <thead
-                    className="table-light"
                     style={{
                       position: 'sticky',
                       top: 0,
