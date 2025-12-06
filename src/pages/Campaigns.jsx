@@ -162,7 +162,7 @@ function Campaigns() {
         ) : (
           <div className="table-responsive">
             <table className="table table-hover mb-0">
-              <thead className="table-light">
+              <thead>
                 <tr>
                   <th style={{ width: '5%' }}>Color</th>
                   <th style={{ width: '30%' }}>Campaign Name</th>
@@ -186,9 +186,7 @@ function Campaigns() {
                         title={campaign.color}
                       />
                     </td>
-                    <td className="align-middle">
-                      <strong>{campaign.name}</strong>
-                    </td>
+                    <td className="align-middle">{campaign.name}</td>
                     <td className="align-middle">
                       <span className="badge bg-primary">{campaign.emailCount || 0}</span>
                     </td>

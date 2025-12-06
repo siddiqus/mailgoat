@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
 import TemplateModal from '../components/TemplateModal'
+import TemplateViewModal from '../components/TemplateViewModal'
 import {
   getAllTemplates,
   createTemplate,
@@ -10,13 +11,13 @@ import {
   exportTemplates,
   importTemplates,
 } from '../services/templateRepositoryService'
-import { sanitizeHtml } from '../utils/sanitizer'
-import './Templates.css'
 
 function Templates() {
   const [templates, setTemplates] = useState([])
   const [showModal, setShowModal] = useState(false)
+  const [showViewModal, setShowViewModal] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState(null)
+  const [viewingTemplate, setViewingTemplate] = useState(null)
   const [loading, setLoading] = useState(true)
   const fileInputRef = useRef(null)
 
@@ -41,6 +42,11 @@ function Templates() {
   const handleCreateClick = () => {
     setEditingTemplate(null)
     setShowModal(true)
+  }
+
+  const handleViewClick = template => {
+    setViewingTemplate(template)
+    setShowViewModal(true)
   }
 
   const handleEditClick = template => {
@@ -98,6 +104,11 @@ function Templates() {
     setEditingTemplate(null)
   }
 
+  const handleViewModalClose = () => {
+    setShowViewModal(false)
+    setViewingTemplate(null)
+  }
+
   const handleExport = async () => {
     try {
       const jsonData = await exportTemplates()
@@ -145,23 +156,40 @@ function Templates() {
     }
   }
 
+  const formatDate = dateString => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString()
+  }
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <div className="text-center py-5">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </PageContainer>
+    )
+  }
+
   return (
     <PageContainer>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Templates</h2>
         <div className="d-flex gap-2">
           <button className="btn btn-outline-secondary" onClick={handleImportClick}>
-            Import Templates
+            Import
           </button>
           <button
             className="btn btn-outline-secondary"
             onClick={handleExport}
             disabled={templates.length === 0}
           >
-            Export Templates
+            Export
           </button>
           <button className="btn btn-primary" onClick={handleCreateClick}>
-            Create New Template
+            Create Template
           </button>
         </div>
       </div>
@@ -175,118 +203,90 @@ function Templates() {
         onChange={handleImportFile}
       />
 
-      {loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
+      {/* Templates List */}
+      <PageCard className="p-0">
+        {templates.length === 0 ? (
+          <div className="text-center py-5 text-muted">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="48"
+              height="48"
+              fill="currentColor"
+              className="bi bi-file-earmark-text mb-3"
+              viewBox="0 0 16 16"
+            >
+              <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z" />
+              <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z" />
+            </svg>
+            <p className="mb-0">No templates yet. Create your first template above!</p>
           </div>
-        </div>
-      ) : templates.length === 0 ? (
-        <PageCard>
-          <div className="template-empty-state">
-            <div className="template-empty-icon">📝</div>
-            <h5>No Templates Found</h5>
-            <p className="text-muted mb-0">
-              Click "Create New Template" to get started with your first email template.
-            </p>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th style={{ width: '30%' }}>Template Name</th>
+                  <th style={{ width: '35%' }}>Subject</th>
+                  <th style={{ width: '15%' }}>Created</th>
+                  <th style={{ width: '20%' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {templates.map(template => (
+                  <tr key={template.id}>
+                    <td className="align-middle">{template.name || 'Untitled Template'}</td>
+                    <td className="align-middle">
+                      <span className="text-muted">{template.subject}</span>
+                    </td>
+                    <td className="align-middle text-muted small">
+                      {formatDate(template.createdAt)}
+                    </td>
+                    <td className="align-middle">
+                      <div className="btn-group btn-group-sm" role="group">
+                        <button
+                          className="btn btn-outline-primary"
+                          onClick={() => handleViewClick(template)}
+                          title="View template"
+                        >
+                          View
+                        </button>
+                        <button
+                          className="btn btn-outline-secondary"
+                          onClick={() => handleEditClick(template)}
+                          title="Edit template"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn btn-outline-danger"
+                          onClick={() => handleDeleteClick(template.id)}
+                          title="Delete template"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </PageCard>
-      ) : (
-        <div className="templates-grid">
-          {templates.map(template => (
-            <div key={template.id} className="template-card">
-              <div className="template-card-header">
-                <h5 className="template-card-title" title={template.name}>
-                  {template.name || 'Untitled Template'}
-                </h5>
-                <div className="template-card-id">ID: {template.id}</div>
-              </div>
+        )}
+      </PageCard>
 
-              <div className="template-card-body">
-                {template.subject && (
-                  <div className="template-subject-section">
-                    <div className="template-subject-label">Subject</div>
-                    <div className="template-subject-value">{template.subject}</div>
-                  </div>
-                )}
-
-                <div className="template-preview-section">
-                  <div className="template-preview-label">HTML Preview</div>
-                  <div
-                    className="template-preview-content"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(template.htmlString) }}
-                  />
-                </div>
-
-                {template.parameters && template.parameters.length > 0 && (
-                  <div className="template-parameters-section">
-                    <div className="template-parameters-label">Parameters</div>
-                    <div className="template-parameters-list">
-                      {template.parameters.map((param, index) => (
-                        <span key={index} className="template-parameter-badge">
-                          {param}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="template-dates">
-                  Created: {new Date(template.createdAt).toLocaleDateString()} • Updated:{' '}
-                  {new Date(template.updatedAt).toLocaleDateString()}
-                </div>
-              </div>
-
-              <div className="template-card-footer">
-                <div className="template-actions">
-                  <button
-                    className="btn btn-sm btn-outline-primary flex-fill"
-                    onClick={() => handleEditClick(template)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      fill="currentColor"
-                      className="bi bi-pencil me-1"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
-                    </svg>
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-sm btn-outline-danger flex-fill"
-                    onClick={() => handleDeleteClick(template.id)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      fill="currentColor"
-                      className="bi bi-trash me-1"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-                      <path
-                        fillRule="evenodd"
-                        d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
-                      />
-                    </svg>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
+      {/* Create/Edit Modal */}
       <TemplateModal
         show={showModal}
         onHide={handleModalClose}
         onSave={handleSave}
         template={editingTemplate}
+      />
+
+      {/* View Modal */}
+      <TemplateViewModal
+        show={showViewModal}
+        onHide={handleViewModalClose}
+        template={viewingTemplate}
       />
     </PageContainer>
   )

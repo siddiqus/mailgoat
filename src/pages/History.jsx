@@ -314,125 +314,105 @@ function History() {
             )}
           </PageCard>
 
-          <div>
-            <div
-              className="border rounded"
-              style={{
-                height: 'calc(80vh - 250px)',
-                minHeight: '400px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
-                <table className="table table-hover mb-0">
-                  <thead
-                    className="table-light"
-                    style={{
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: 1,
-                    }}
-                  >
-                    <tr>
-                      <th style={{ width: '180px' }}>Sent At</th>
-                      <th style={{ width: '100px' }}>Status</th>
-                      <th style={{ width: '150px' }}>Template</th>
-                      <th style={{ width: '150px' }}>Campaign</th>
-                      <th>Recipients</th>
-                      <th>CC</th>
-                      <th>Subject</th>
-                      <th style={{ width: '120px' }}>Actions</th>
+          <PageCard className="p-0">
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th style={{ width: '12%' }}>Sent At</th>
+                    <th style={{ width: '8%' }}>Status</th>
+                    <th style={{ width: '12%' }}>Template</th>
+                    <th style={{ width: '12%' }}>Campaign</th>
+                    <th style={{ width: '18%' }}>Recipients</th>
+                    <th style={{ width: '12%' }}>CC</th>
+                    <th style={{ width: '18%' }}>Subject</th>
+                    <th style={{ width: '8%' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredHistory.map(record => (
+                    <tr key={record.id}>
+                      <td className="align-middle">
+                        <small>{new Date(record.sentAt).toLocaleString()}</small>
+                      </td>
+                      <td className="align-middle">
+                        {record.status === 'pending' && (
+                          <span className="badge bg-warning text-dark">Pending</span>
+                        )}
+                        {record.status === 'sent' && <span className="badge bg-success">Sent</span>}
+                        {record.status === 'failed' && (
+                          <span className="badge bg-danger">Failed</span>
+                        )}
+                      </td>
+                      <td className="align-middle">
+                        {record.templateId ? (
+                          <button
+                            className="btn btn-sm btn-link p-0 text-start"
+                            onClick={() => handleTemplateClick(record.templateId)}
+                            title="View template details"
+                          >
+                            {record.templateName}
+                          </button>
+                        ) : (
+                          <span className="text-muted">{record.templateName}</span>
+                        )}
+                      </td>
+                      <td className="align-middle">
+                        {record.campaignId ? (
+                          (() => {
+                            const campaign = getCampaign(record.campaignId)
+                            const bgColor = campaign.color || '#0d6efd'
+                            const textColor = getTextColor(bgColor)
+                            return (
+                              <span
+                                className="badge"
+                                style={{
+                                  backgroundColor: bgColor,
+                                  color: textColor,
+                                }}
+                              >
+                                {campaign.name}
+                              </span>
+                            )
+                          })()
+                        ) : (
+                          <span className="text-muted">-</span>
+                        )}
+                      </td>
+                      <td className="align-middle">
+                        <small>{formatRecipients(record.recipients)}</small>
+                      </td>
+                      <td className="align-middle">
+                        <small>
+                          {record.ccList && record.ccList.length > 0
+                            ? formatRecipients(record.ccList)
+                            : '-'}
+                        </small>
+                      </td>
+                      <td className="align-middle">
+                        <small>{record.subject}</small>
+                      </td>
+                      <td className="align-middle">
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => setSelectedEmail(record)}
+                          title="View email"
+                        >
+                          View
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredHistory.map(record => (
-                      <tr key={record.id}>
-                        <td className="align-middle">
-                          <small>{new Date(record.sentAt).toLocaleString()}</small>
-                        </td>
-                        <td className="align-middle">
-                          {record.status === 'pending' && (
-                            <span className="badge bg-warning text-dark">Pending</span>
-                          )}
-                          {record.status === 'sent' && (
-                            <span className="badge bg-success">Sent</span>
-                          )}
-                          {record.status === 'failed' && (
-                            <span className="badge bg-danger">Failed</span>
-                          )}
-                        </td>
-                        <td className="align-middle">
-                          {record.templateId ? (
-                            <button
-                              className="btn btn-sm btn-link p-0 text-start"
-                              onClick={() => handleTemplateClick(record.templateId)}
-                              title="View template details"
-                            >
-                              {record.templateName}
-                            </button>
-                          ) : (
-                            <span className="text-muted">{record.templateName}</span>
-                          )}
-                        </td>
-                        <td className="align-middle">
-                          {record.campaignId ? (
-                            (() => {
-                              const campaign = getCampaign(record.campaignId)
-                              const bgColor = campaign.color || '#0d6efd'
-                              const textColor = getTextColor(bgColor)
-                              return (
-                                <span
-                                  className="badge"
-                                  style={{
-                                    backgroundColor: bgColor,
-                                    color: textColor,
-                                  }}
-                                >
-                                  {campaign.name}
-                                </span>
-                              )
-                            })()
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td className="align-middle">
-                          <small>{formatRecipients(record.recipients)}</small>
-                        </td>
-                        <td className="align-middle">
-                          <small>
-                            {record.ccList && record.ccList.length > 0
-                              ? formatRecipients(record.ccList)
-                              : '-'}
-                          </small>
-                        </td>
-                        <td className="align-middle">
-                          <small>{record.subject}</small>
-                        </td>
-                        <td className="align-middle">
-                          <div className="btn-group btn-group-sm">
-                            <button
-                              className="btn btn-outline-primary"
-                              onClick={() => setSelectedEmail(record)}
-                              title="View email"
-                            >
-                              View
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="text-muted mt-2">
-              <small>
-                Showing {filteredHistory.length} of {history.length} email
-                {history.length !== 1 ? 's' : ''}{' '}
-              </small>
-            </div>
+          </PageCard>
+
+          <div className="text-muted mt-2">
+            <small>
+              Showing {filteredHistory.length} of {history.length} email
+              {history.length !== 1 ? 's' : ''}{' '}
+            </small>
           </div>
         </div>
       )}
