@@ -1,6 +1,8 @@
 /* Page Container Styles */
 .page-container {
-  min-height: 100vh;
+  height: calc(100vh - 56px);
+  max-height: calc(100vh - 56px);
+  overflow-y: auto;
   background-color: #f5f5f5;
   padding-bottom: 3rem;
 }

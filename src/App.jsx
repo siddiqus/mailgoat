@@ -15,7 +15,7 @@ function App() {
       <Router>
         <div className="App">
           <TopBar />
-          <div style={{ paddingTop: '56px' }}>
+          <div style={{ paddingTop: '56px', height: '100vh', overflow: 'hidden' }}>
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<HomePage />} />
