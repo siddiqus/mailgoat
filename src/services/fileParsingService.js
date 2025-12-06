@@ -37,18 +37,18 @@ export const validateDataRows = (data, templateParams) => {
     if (!row.recipient || row.recipient.trim() === '') {
       errors.push(`Row ${rowNum}: Missing recipient email`)
     } else {
-      // Parse multiple recipients (separated by comma or semicolon)
+      // Parse recipients (only one is allowed)
       const recipients = parseEmailList(row.recipient)
 
       if (recipients.length === 0) {
-        errors.push(`Row ${rowNum}: No valid recipient emails found`)
+        errors.push(`Row ${rowNum}: No valid recipient email found`)
+      } else if (recipients.length > 1) {
+        errors.push(`Row ${rowNum}: Only one recipient email is allowed per row`)
       } else {
-        // Validate each recipient email
-        recipients.forEach(email => {
-          if (!isValidEmail(email)) {
-            errors.push(`Row ${rowNum}: Invalid recipient email format "${email}"`)
-          }
-        })
+        // Validate the recipient email
+        if (!isValidEmail(recipients[0])) {
+          errors.push(`Row ${rowNum}: Invalid recipient email format "${recipients[0]}"`)
+        }
       }
     }
 

@@ -37,7 +37,7 @@ export const generateSampleCSV = template => {
   const headers = requiredColumns.join(',')
   const sampleRow = requiredColumns
     .map(col => {
-      if (col === 'recipient') return 'user1@example.com; user2@example.com'
+      if (col === 'recipient') return 'user@example.com'
       if (col === 'cc') return 'cc@example.com (optional)'
       return `sample_${col}`
     })

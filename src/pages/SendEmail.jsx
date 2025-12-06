@@ -132,11 +132,17 @@ function SendEmail() {
     setRecipients(value)
 
     if (value.trim()) {
-      const validation = validateEmailList(value)
-      if (!validation.isValid) {
-        setRecipientsError(`Invalid email(s): ${validation.invalidEmails.join(', ')}`)
+      // Check if multiple emails are entered
+      const emailList = parseEmailList(value)
+      if (emailList.length > 1) {
+        setRecipientsError('Only one recipient email is allowed for single email')
       } else {
-        setRecipientsError('')
+        const validation = validateEmailList(value)
+        if (!validation.isValid) {
+          setRecipientsError(`Invalid email: ${validation.invalidEmails.join(', ')}`)
+        } else {
+          setRecipientsError('')
+        }
       }
     } else {
       setRecipientsError('')
@@ -160,13 +166,20 @@ function SendEmail() {
 
   const handleSendEmail = async () => {
     if (!recipients.trim()) {
-      alert('Please enter at least one recipient email address')
+      alert('Please enter a recipient email address')
+      return
+    }
+
+    // Check if multiple emails are entered
+    const emailList = parseEmailList(recipients)
+    if (emailList.length > 1) {
+      alert('Only one recipient email is allowed for single email')
       return
     }
 
     const recipientsValidation = validateEmailList(recipients)
     if (!recipientsValidation.isValid) {
-      alert(`Invalid recipient email(s): ${recipientsValidation.invalidEmails.join(', ')}`)
+      alert(`Invalid recipient email: ${recipientsValidation.invalidEmails.join(', ')}`)
       return
     }
 
@@ -284,11 +297,17 @@ function SendEmail() {
       if (!entry.recipient || !entry.recipient.trim()) {
         errors.push(`Row ${index + 1}: Recipient is required`)
       } else {
-        const recipientValidation = validateEmailList(entry.recipient)
-        if (!recipientValidation.isValid) {
-          errors.push(
-            `Row ${index + 1}: Invalid recipient email(s): ${recipientValidation.invalidEmails.join(', ')}`
-          )
+        // Check if multiple emails are entered
+        const emailList = parseEmailList(entry.recipient)
+        if (emailList.length > 1) {
+          errors.push(`Row ${index + 1}: Only one recipient email is allowed per row`)
+        } else {
+          const recipientValidation = validateEmailList(entry.recipient)
+          if (!recipientValidation.isValid) {
+            errors.push(
+              `Row ${index + 1}: Invalid recipient email: ${recipientValidation.invalidEmails.join(', ')}`
+            )
+          }
         }
       }
 
@@ -565,19 +584,19 @@ function SendEmail() {
 
                     <div className="mb-3">
                       <label className="form-label">
-                        Recipients <span className="text-danger">*</span>
+                        Recipient <span className="text-danger">*</span>
                       </label>
-                      <textarea
+                      <input
+                        type="email"
                         className={`form-control ${recipientsError ? 'is-invalid' : ''}`}
-                        rows="2"
                         value={recipients}
                         onChange={e => handleRecipientsChange(e.target.value)}
-                        placeholder="user1@example.com, user2@example.com"
+                        placeholder="user@example.com"
                       />
                       {recipientsError ? (
                         <div className="invalid-feedback">{recipientsError}</div>
                       ) : (
-                        <div className="form-text">Separate multiple emails with commas</div>
+                        <div className="form-text">Enter a single recipient email address</div>
                       )}
                     </div>
 
