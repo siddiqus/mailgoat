@@ -7,8 +7,9 @@
 body {
   overflow-x: hidden;
   max-width: 100vw;
-
   background: #f5f5f5;
+  margin: 0;
+  padding: 0;
 }
 
 #root {
@@ -19,6 +20,40 @@ body {
 .App {
   overflow-x: hidden;
   max-width: 100vw;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Main Content Area */
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When sidebar is collapsed (desktop) */
+@media (min-width: 768px) {
+  .App:has(.sidebar.collapsed) .main-content {
+    margin-left: 70px;
+  }
+}
+
+/* Mobile - no left margin when sidebar is hidden */
+@media (max-width: 767.98px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 60px; /* Space for mobile top bar */
+  }
+}
+
+/* Tablet - Auto-collapse behavior */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .main-content {
+    margin-left: 70px;
+  }
 }
 
 /* Ensure container doesn't overflow on mobile */

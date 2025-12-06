@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './components/HomePage'
-import TopBar from './components/TopBar'
+import Sidebar from './components/Sidebar'
 import Analytics from './pages/Analytics'
 import Campaigns from './pages/Campaigns'
 import History from './pages/History'
@@ -14,8 +14,8 @@ function App() {
     <ErrorBoundary>
       <Router>
         <div className="App">
-          <TopBar />
-          <div style={{ paddingTop: '56px', height: '100vh', overflow: 'hidden' }}>
+          <Sidebar />
+          <div className="main-content">
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<HomePage />} />
