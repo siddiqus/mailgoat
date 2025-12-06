@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import EmailDetailModal from '../components/EmailDetailModal'
+import PageCard from '../components/PageCard'
+import PageContainer from '../components/PageContainer'
 import SearchableSelect from '../components/SearchableSelect'
 import TemplateDetailModal from '../components/TemplateDetailModal'
 import { getAllCampaigns } from '../services/campaignService'
@@ -199,18 +201,18 @@ function History() {
 
   if (loading) {
     return (
-      <div className="container mt-5">
+      <PageContainer>
         <div className="text-center py-5">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="container mt-5">
+    <PageContainer>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Email History</h2>
         <button
@@ -257,63 +259,60 @@ function History() {
       ) : (
         <div>
           {/* Filters */}
-          <div className="card mb-3">
-            <div className="card-body">
-              <div className="row g-3">
-                {/* Campaign Filter */}
-                <div className="col-md-6">
-                  <div className="d-flex align-items-end gap-2">
-                    <div style={{ flex: 1 }}>
-                      <SearchableSelect
-                        label="Filter by Campaign:"
-                        options={campaignOptions}
-                        value={selectedCampaignFilter}
-                        onChange={handleCampaignFilterChange}
-                        placeholder="Select a campaign..."
-                        allowClear={true}
-                      />
-                    </div>
-                    {selectedCampaignFilter !== 'all' && selectedCampaignFilter !== 'none' && (
-                      <div
-                        style={{
-                          width: '38px',
-                          height: '38px',
-                          backgroundColor:
-                            campaigns.find(c => c.id === selectedCampaignFilter)?.color ||
-                            '#0d6efd',
-                          borderRadius: '4px',
-                          border: '1px solid #dee2e6',
-                          flexShrink: 0,
-                        }}
-                        title={campaigns.find(c => c.id === selectedCampaignFilter)?.name}
-                      />
-                    )}
+          <PageCard className="mb-3">
+            <div className="row g-3">
+              {/* Campaign Filter */}
+              <div className="col-md-6">
+                <div className="d-flex align-items-end gap-2">
+                  <div style={{ flex: 1 }}>
+                    <SearchableSelect
+                      label="Filter by Campaign:"
+                      options={campaignOptions}
+                      value={selectedCampaignFilter}
+                      onChange={handleCampaignFilterChange}
+                      placeholder="Select a campaign..."
+                      allowClear={true}
+                    />
                   </div>
-                </div>
-
-                {/* Template Filter */}
-                <div className="col-md-6">
-                  <SearchableSelect
-                    label="Filter by Template:"
-                    options={templateOptions}
-                    value={selectedTemplateFilter}
-                    onChange={handleTemplateFilterChange}
-                    placeholder="Select a template..."
-                    allowClear={true}
-                  />
+                  {selectedCampaignFilter !== 'all' && selectedCampaignFilter !== 'none' && (
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        backgroundColor:
+                          campaigns.find(c => c.id === selectedCampaignFilter)?.color || '#0d6efd',
+                        borderRadius: '4px',
+                        border: '1px solid #dee2e6',
+                        flexShrink: 0,
+                      }}
+                      title={campaigns.find(c => c.id === selectedCampaignFilter)?.name}
+                    />
+                  )}
                 </div>
               </div>
 
-              {/* Clear Filters Button */}
-              {(selectedCampaignFilter !== 'all' || selectedTemplateFilter !== 'all') && (
-                <div className="mt-3">
-                  <button className="btn btn-sm btn-outline-secondary" onClick={handleClearFilters}>
-                    Clear All Filters
-                  </button>
-                </div>
-              )}
+              {/* Template Filter */}
+              <div className="col-md-6">
+                <SearchableSelect
+                  label="Filter by Template:"
+                  options={templateOptions}
+                  value={selectedTemplateFilter}
+                  onChange={handleTemplateFilterChange}
+                  placeholder="Select a template..."
+                  allowClear={true}
+                />
+              </div>
             </div>
-          </div>
+
+            {/* Clear Filters Button */}
+            {(selectedCampaignFilter !== 'all' || selectedTemplateFilter !== 'all') && (
+              <div className="mt-3">
+                <button className="btn btn-sm btn-outline-secondary" onClick={handleClearFilters}>
+                  Clear All Filters
+                </button>
+              </div>
+            )}
+          </PageCard>
 
           <div>
             <div
@@ -450,7 +449,7 @@ function History() {
           onClose={() => setSelectedTemplate(null)}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }
 

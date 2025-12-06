@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import PageCard from '../components/PageCard'
+import PageContainer from '../components/PageContainer'
 import { getAllCampaigns, createCampaign, updateCampaign } from '../services/campaignService'
 
 function Campaigns() {
@@ -120,18 +122,18 @@ function Campaigns() {
 
   if (loading) {
     return (
-      <div className="container mt-5">
+      <PageContainer>
         <div className="text-center py-5">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="container mt-5">
+    <PageContainer>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Campaigns</h2>
         <button className="btn btn-primary" onClick={handleOpenCreateModal}>
@@ -140,77 +142,75 @@ function Campaigns() {
       </div>
 
       {/* Campaigns List */}
-      <div className="card">
-        <div className="card-body p-0">
-          {campaigns.length === 0 ? (
-            <div className="text-center py-5 text-muted">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="48"
-                height="48"
-                fill="currentColor"
-                className="bi bi-folder-x mb-3"
-                viewBox="0 0 16 16"
-              >
-                <path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181L15.546 8H14.54l.265-2.91A1 1 0 0 0 13.81 4H9.828a2 2 0 0 1-1.414-.586l-.828-.828A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006 3.089H.54z" />
-                <path d="M5 12.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z" />
-                <path d="M0 4.5A1.5 1.5 0 0 1 1.5 3h13A1.5 1.5 0 0 1 16 4.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 11.5v-7zM1 6v5.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V6H1z" />
-              </svg>
-              <p className="mb-0">No campaigns yet. Create your first campaign above!</p>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th style={{ width: '5%' }}>Color</th>
-                    <th style={{ width: '30%' }}>Campaign Name</th>
-                    <th style={{ width: '15%' }}>Emails Sent</th>
-                    <th style={{ width: '25%' }}>Created</th>
-                    <th style={{ width: '25%' }}>Actions</th>
+      <PageCard className="p-0">
+        {campaigns.length === 0 ? (
+          <div className="text-center py-5 text-muted">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="48"
+              height="48"
+              fill="currentColor"
+              className="bi bi-folder-x mb-3"
+              viewBox="0 0 16 16"
+            >
+              <path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181L15.546 8H14.54l.265-2.91A1 1 0 0 0 13.81 4H9.828a2 2 0 0 1-1.414-.586l-.828-.828A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006 3.089H.54z" />
+              <path d="M5 12.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z" />
+              <path d="M0 4.5A1.5 1.5 0 0 1 1.5 3h13A1.5 1.5 0 0 1 16 4.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 11.5v-7zM1 6v5.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V6H1z" />
+            </svg>
+            <p className="mb-0">No campaigns yet. Create your first campaign above!</p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-hover mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th style={{ width: '5%' }}>Color</th>
+                  <th style={{ width: '30%' }}>Campaign Name</th>
+                  <th style={{ width: '15%' }}>Emails Sent</th>
+                  <th style={{ width: '25%' }}>Created</th>
+                  <th style={{ width: '25%' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campaigns.map(campaign => (
+                  <tr key={campaign.id}>
+                    <td className="align-middle">
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          backgroundColor: campaign.color || '#0d6efd',
+                          borderRadius: '4px',
+                          border: '1px solid #dee2e6',
+                        }}
+                        title={campaign.color}
+                      />
+                    </td>
+                    <td className="align-middle">
+                      <strong>{campaign.name}</strong>
+                    </td>
+                    <td className="align-middle">
+                      <span className="badge bg-primary">{campaign.emailCount || 0}</span>
+                    </td>
+                    <td className="align-middle text-muted small">
+                      {formatDate(campaign.createdAt)}
+                    </td>
+                    <td className="align-middle">
+                      <button
+                        className="btn btn-sm btn-outline-primary me-2"
+                        onClick={() => handleOpenEditModal(campaign)}
+                        title="Edit campaign"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {campaigns.map(campaign => (
-                    <tr key={campaign.id}>
-                      <td className="align-middle">
-                        <div
-                          style={{
-                            width: '32px',
-                            height: '32px',
-                            backgroundColor: campaign.color || '#0d6efd',
-                            borderRadius: '4px',
-                            border: '1px solid #dee2e6',
-                          }}
-                          title={campaign.color}
-                        />
-                      </td>
-                      <td className="align-middle">
-                        <strong>{campaign.name}</strong>
-                      </td>
-                      <td className="align-middle">
-                        <span className="badge bg-primary">{campaign.emailCount || 0}</span>
-                      </td>
-                      <td className="align-middle text-muted small">
-                        {formatDate(campaign.createdAt)}
-                      </td>
-                      <td className="align-middle">
-                        <button
-                          className="btn btn-sm btn-outline-primary me-2"
-                          onClick={() => handleOpenEditModal(campaign)}
-                          title="Edit campaign"
-                        >
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </PageCard>
 
       <div className="alert alert-info mt-4">
         <strong>About Campaigns:</strong> Campaigns help you organize and track your email sends.
@@ -308,7 +308,7 @@ function Campaigns() {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }
 

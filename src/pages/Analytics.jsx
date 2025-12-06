@@ -10,6 +10,8 @@ import {
 } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
 import EmailDetailModal from '../components/EmailDetailModal'
+import PageCard from '../components/PageCard'
+import PageContainer from '../components/PageContainer'
 import SearchableSelect from '../components/SearchableSelect'
 import { getEmailAnalytics } from '../services/analyticsService'
 import { getAllCampaigns } from '../services/campaignService'
@@ -278,82 +280,80 @@ function Analytics() {
 
   if (loading) {
     return (
-      <div className="container mt-5">
+      <PageContainer>
         <div className="text-center py-5">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="container mt-5">
+    <PageContainer>
       <h2 className="mb-4">Email Analytics</h2>
 
       {/* Filters */}
-      <div className="card mb-4">
-        <div className="card-body">
-          <div className="row g-3 align-items-end">
-            {/* Campaign Filter */}
-            <div className="col-md-4">
-              <SearchableSelect
-                label="Filter by Campaign:"
-                options={campaignOptions}
-                value={selectedCampaignFilter}
-                onChange={setSelectedCampaignFilter}
-                placeholder="Select a campaign..."
-                allowClear={true}
-              />
-            </div>
+      <PageCard className="mb-4">
+        <div className="row g-3 align-items-end">
+          {/* Campaign Filter */}
+          <div className="col-md-4">
+            <SearchableSelect
+              label="Filter by Campaign:"
+              options={campaignOptions}
+              value={selectedCampaignFilter}
+              onChange={setSelectedCampaignFilter}
+              placeholder="Select a campaign..."
+              allowClear={true}
+            />
+          </div>
 
-            {/* Template Filter */}
-            <div className="col-md-4">
-              <SearchableSelect
-                label="Filter by Template:"
-                options={templateOptions}
-                value={selectedTemplateFilter}
-                onChange={setSelectedTemplateFilter}
-                placeholder="Select a template..."
-                allowClear={true}
-              />
-            </div>
+          {/* Template Filter */}
+          <div className="col-md-4">
+            <SearchableSelect
+              label="Filter by Template:"
+              options={templateOptions}
+              value={selectedTemplateFilter}
+              onChange={setSelectedTemplateFilter}
+              placeholder="Select a template..."
+              allowClear={true}
+            />
+          </div>
 
-            {/* Action Buttons */}
-            <div className="col-md-4">
-              <div className="d-flex gap-2 align-items-center">
-                <button
-                  className="btn btn-primary"
-                  onClick={handleViewAnalytics}
-                  disabled={
-                    fetchingAnalytics ||
-                    (selectedCampaignFilter === 'all' && selectedTemplateFilter === 'all')
-                  }
-                >
-                  {fetchingAnalytics ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      ></span>
-                      Loading...
-                    </>
-                  ) : (
-                    'View Analytics'
-                  )}
-                </button>
-                {(selectedCampaignFilter !== 'all' || selectedTemplateFilter !== 'all') && (
-                  <button className="btn btn-outline-secondary" onClick={handleClearFilters}>
-                    Clear
-                  </button>
+          {/* Action Buttons */}
+          <div className="col-md-4">
+            <div className="d-flex gap-2 align-items-center">
+              <button
+                className="btn btn-primary"
+                onClick={handleViewAnalytics}
+                disabled={
+                  fetchingAnalytics ||
+                  (selectedCampaignFilter === 'all' && selectedTemplateFilter === 'all')
+                }
+              >
+                {fetchingAnalytics ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Loading...
+                  </>
+                ) : (
+                  'View Analytics'
                 )}
-              </div>
+              </button>
+              {(selectedCampaignFilter !== 'all' || selectedTemplateFilter !== 'all') && (
+                <button className="btn btn-outline-secondary" onClick={handleClearFilters}>
+                  Clear
+                </button>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      </PageCard>
 
       {/* Analytics Results */}
       {analyticsData && (
@@ -391,9 +391,10 @@ function Analytics() {
           </div>
 
           {/* Chart Section */}
-          <div className="card mb-4">
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Email Performance Chart</h5>
+          <PageCard
+            className="mb-4"
+            header="Email Performance Chart"
+            headerActions={
               <div className="btn-group btn-group-sm" role="group">
                 <button
                   type="button"
@@ -410,87 +411,81 @@ function Analytics() {
                   By Campaigns
                 </button>
               </div>
-            </div>
-            <div className="card-body">
-              {chartData && (
-                <div style={{ height: '400px' }}>
-                  <Bar data={chartData} options={chartOptions} />
-                </div>
-              )}
-            </div>
-          </div>
+            }
+          >
+            {chartData && (
+              <div style={{ height: '400px' }}>
+                <Bar data={chartData} options={chartOptions} />
+              </div>
+            )}
+          </PageCard>
 
           {/* Opened Emails List */}
-          <div className="card">
-            <div className="card-header">
-              <h5 className="mb-0">Opened Emails ({openedEmails.length})</h5>
-            </div>
-            <div className="card-body">
-              {openedEmails.length === 0 ? (
-                <div className="alert alert-info">
-                  No emails have been opened yet for the selected filters.
-                </div>
-              ) : (
-                <div
-                  className="border rounded"
-                  style={{
-                    height: '400px',
-                    overflow: 'auto',
-                  }}
-                >
-                  <table className="table table-hover mb-0">
-                    <thead
-                      className="table-light"
-                      style={{
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1,
-                      }}
-                    >
-                      <tr>
-                        <th style={{ width: '180px' }}>Sent At</th>
-                        <th>Recipient</th>
-                        <th>Subject</th>
-                        <th>CC</th>
-                        <th style={{ width: '100px' }}>Actions</th>
+          <PageCard header={`Opened Emails (${openedEmails.length})`}>
+            {openedEmails.length === 0 ? (
+              <div className="alert alert-info">
+                No emails have been opened yet for the selected filters.
+              </div>
+            ) : (
+              <div
+                className="border rounded"
+                style={{
+                  height: '400px',
+                  overflow: 'auto',
+                }}
+              >
+                <table className="table table-hover mb-0">
+                  <thead
+                    className="table-light"
+                    style={{
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 1,
+                    }}
+                  >
+                    <tr>
+                      <th style={{ width: '180px' }}>Sent At</th>
+                      <th>Recipient</th>
+                      <th>Subject</th>
+                      <th>CC</th>
+                      <th style={{ width: '100px' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {openedEmails.map(record => (
+                      <tr key={record.id}>
+                        <td className="align-middle">
+                          <small>{new Date(record.sentAt).toLocaleString()}</small>
+                        </td>
+                        <td className="align-middle">
+                          <small>{formatRecipients(record.recipients)}</small>
+                        </td>
+                        <td className="align-middle">
+                          <small>{record.subject}</small>
+                        </td>
+                        <td className="align-middle">
+                          <small>
+                            {record.ccList && record.ccList.length > 0
+                              ? formatRecipients(record.ccList)
+                              : '-'}
+                          </small>
+                        </td>
+                        <td className="align-middle">
+                          <button
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => setSelectedEmail(record)}
+                            title="View email"
+                          >
+                            View
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {openedEmails.map(record => (
-                        <tr key={record.id}>
-                          <td className="align-middle">
-                            <small>{new Date(record.sentAt).toLocaleString()}</small>
-                          </td>
-                          <td className="align-middle">
-                            <small>{formatRecipients(record.recipients)}</small>
-                          </td>
-                          <td className="align-middle">
-                            <small>{record.subject}</small>
-                          </td>
-                          <td className="align-middle">
-                            <small>
-                              {record.ccList && record.ccList.length > 0
-                                ? formatRecipients(record.ccList)
-                                : '-'}
-                            </small>
-                          </td>
-                          <td className="align-middle">
-                            <button
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() => setSelectedEmail(record)}
-                              title="View email"
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </PageCard>
         </>
       )}
 
@@ -498,7 +493,7 @@ function Analytics() {
       {selectedEmail && (
         <EmailDetailModal emailRecord={selectedEmail} onClose={() => setSelectedEmail(null)} />
       )}
-    </div>
+    </PageContainer>
   )
 }
 

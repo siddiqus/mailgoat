@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import PageContainer from '../components/PageContainer'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { getAllCampaigns } from '../services/campaignService'
 import { generateEmailId, saveToHistory } from '../services/emailHistoryService'
@@ -449,18 +450,18 @@ function SendEmail() {
 
   if (loading) {
     return (
-      <div className="container mt-5">
+      <PageContainer>
         <div className="text-center py-5">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="container mt-5">
+    <PageContainer>
       <h2 className="mb-4">Send Email</h2>
 
       {!webhookConfigured && (
@@ -1159,7 +1160,7 @@ function SendEmail() {
           )}
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }
 
