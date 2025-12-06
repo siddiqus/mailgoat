@@ -6,6 +6,9 @@
 }
 
 .hover-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   transition:
     transform 0.2s,
     box-shadow 0.2s;
@@ -14,4 +17,13 @@
 .hover-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.home-page-container .row.g-4 > [class*='col-'] {
+  display: flex;
+}
+
+.home-page-container .row.g-4 > [class*='col-'] > a {
+  width: 100%;
+  display: flex;
 }
