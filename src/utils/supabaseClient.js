@@ -49,3 +49,33 @@ export function resetSupabaseClient() {
   supabaseClient = null
   currentConfig = null
 }
+
+/**
+ * Get email interactions with optional filters for campaign_id and template_id
+ * @param {Object} filters - Optional filters
+ * @param {string} [filters.campaign_id] - Filter by campaign ID
+ * @param {string} [filters.template_id] - Filter by template ID
+ * @returns {Promise<Array>} Array of email interactions
+ */
+export async function getEmailInteractions(filters = {}) {
+  const client = await getSupabaseClient()
+
+  let query = client.from('email_interactions').select('*')
+
+  // Apply conditional where clauses
+  if (filters.campaign_id) {
+    query = query.eq('campaign_id', filters.campaign_id)
+  }
+
+  if (filters.template_id) {
+    query = query.eq('template_id', filters.template_id)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error(`Failed to fetch email interactions: ${error.message}`)
+  }
+
+  return data || []
+}
