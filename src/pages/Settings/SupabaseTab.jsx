@@ -140,7 +140,7 @@ function SupabaseTab({
                     className="bg-light p-2 rounded mt-1 small mb-0"
                     style={{ fontSize: '0.65rem', wordBreak: 'break-all' }}
                   >
-                    {`<img src="${supabaseUrl}/functions/v1/store-email-interaction?campaignId=123&recipient=some@email.com&templateId=abc&emailId=asd" width="1" height="1" />`}
+                    {`<img src="${supabaseUrl}/functions/v1/store-email-interaction?c=123&r=some@email.com&t=abc&e=asd" width="1" height="1" />`}
                   </pre>
                 </div>
               </>

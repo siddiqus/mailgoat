@@ -54,22 +54,22 @@ supabase functions deploy store-email-interaction
 Make a GET request to the function URL with query parameters:
 
 ```
-GET https://your-project.supabase.co/functions/v1/store-email-interaction?recipient=user@example.com&emailId=abc123&templateId=template1&campaignId=campaign1
+GET https://your-project.supabase.co/functions/v1/store-email-interaction?r=user@example.com&e=abc123&t=template1&c=campaign1
 ```
 
 ### Query Parameters
 
-- `recipient` (required): Email address of the recipient
-- `emailId` (required): Unique identifier for the email
-- `templateId` (optional): Template ID used for the email
-- `campaignId` (optional): Campaign ID if the email is part of a campaign
+- `r` (required): Email address of the recipient
+- `e` (required): Unique identifier for the email
+- `t` (optional): Template ID used for the email
+- `c` (optional): Campaign ID if the email is part of a campaign
 
 ### Response
 
 The function returns a 1x1 transparent GIF image, making it suitable for use as a tracking pixel:
 
 ```html
-<img src="https://your-project.supabase.co/functions/v1/store-email-interaction?recipient=user@example.com&emailId=abc123" width="1" height="1" />
+<img src="https://your-project.supabase.co/functions/v1/store-email-interaction?r=user@example.com&e=abc123" width="1" height="1" />
 ```
 
 ## Configuration in Email Tool

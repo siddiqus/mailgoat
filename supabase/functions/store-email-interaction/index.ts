@@ -17,10 +17,10 @@ serve(async req => {
   try {
     // Parse query parameters from the URL
     const url = new URL(req.url)
-    const recipient = url.searchParams.get('recipient')
-    const emailId = url.searchParams.get('emailId')
-    const templateId = url.searchParams.get('templateId')
-    const campaignId = url.searchParams.get('campaignId') // nullable
+    const recipient = url.searchParams.get('r')
+    const emailId = url.searchParams.get('e')
+    const templateId = url.searchParams.get('t')
+    const campaignId = url.searchParams.get('c') // nullable
 
     // Validate required parameters
     if (!recipient || !emailId) {

@@ -46,10 +46,10 @@ export function getTrackingPixelUrl({
 }: TrackingPixelParams): string {
   // Build query parameters
   const params = new URLSearchParams()
-  if (emailId) params.append('emailId', emailId)
-  if (campaignId) params.append('campaignId', campaignId)
-  if (templateId) params.append('templateId', templateId)
-  if (recipient) params.append('recipient', recipient)
+  if (emailId) params.append('e', emailId)
+  if (campaignId) params.append('c', campaignId)
+  if (templateId) params.append('t', templateId)
+  if (recipient) params.append('r', recipient)
 
   return `${supabaseUrl}/functions/v1/store-email-interaction?${params.toString()}`
 }

@@ -104,7 +104,7 @@ supabase functions serve store-email-interaction
 ### Test Function
 
 ```bash
-curl "http://localhost:54321/functions/v1/store-email-interaction?recipient=test@example.com&emailId=test123&templateId=template1&campaignId=campaign1"
+curl "http://localhost:54321/functions/v1/store-email-interaction?r=test@example.com&e=test123&t=template1&c=campaign1"
 ```
 
 ## Security
