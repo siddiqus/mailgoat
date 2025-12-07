@@ -122,16 +122,19 @@ export const sendSingleEmail = async (
   // Extract templateId from options.template or options.templateId
   const templateId = options.template?.id || options.templateId
 
-  // Add tracking pixel to HTML body for the first recipient
+  // Add tracking pixel to HTML body for the first recipient (only if pixel tracking is enabled)
   const primaryRecipient = emailData.recipients[0]
-  const htmlBodyWithTracking = addTrackingPixel({
-    htmlBody: emailData.htmlBody || emailData.htmlString || '',
-    recipient: primaryRecipient,
-    emailId: emailId,
-    templateId: templateId,
-    campaignId: options.campaignId || undefined,
-    supabaseUrl: settings.supabase?.url,
-  })
+  const pixelTrackingEnabled = settings.pixelTracking?.enabled ?? true
+  const htmlBodyWithTracking = pixelTrackingEnabled
+    ? addTrackingPixel({
+        htmlBody: emailData.htmlBody || emailData.htmlString || '',
+        recipient: primaryRecipient,
+        emailId: emailId,
+        templateId: templateId,
+        campaignId: options.campaignId || undefined,
+        supabaseUrl: settings.supabase?.url,
+      })
+    : emailData.htmlBody || emailData.htmlString || ''
 
   // Create modified email data with tracking pixel
   const emailDataWithTracking: EmailData = {

@@ -63,6 +63,9 @@ class LocalStorageSettingsRepository {
         url: '',
         key: '',
       },
+      pixelTracking: {
+        enabled: false, // Enabled by default for backward compatibility
+      },
     }
   }
 }

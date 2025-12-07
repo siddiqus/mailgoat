@@ -135,4 +135,11 @@ export interface SupabaseSettings {
 export interface Settings {
   webhook: WebhookSettings
   supabase?: SupabaseSettings
+  pixelTracking?: {
+    enabled: boolean
+  }
+  calendarWebhook?: {
+    url: string
+    headers: WebhookHeader[]
+  }
 }
