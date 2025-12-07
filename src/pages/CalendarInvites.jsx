@@ -340,12 +340,23 @@ function CalendarInvites() {
     return options
   }, [templates])
 
-  // Build timezone options
+  // Build timezone options - sorted alphabetically and deduplicated
   const timezoneOptions = useMemo(() => {
-    return timezones.map(tz => ({
-      value: tz.windowsTime,
-      label: `${tz.windowsTime} (${tz.city})`,
-    }))
+    // Use a Map to deduplicate by value (windowsTime)
+    const uniqueMap = new Map()
+
+    timezones.forEach(tz => {
+      // Only add if we haven't seen this windowsTime before
+      if (!uniqueMap.has(tz.windowsTime)) {
+        uniqueMap.set(tz.windowsTime, {
+          value: tz.windowsTime,
+          label: `${tz.windowsTime} (${tz.city})`,
+        })
+      }
+    })
+
+    // Convert Map values to array and sort alphabetically
+    return Array.from(uniqueMap.values()).sort((a, b) => a.label.localeCompare(b.label))
   }, [])
 
   // Get non-predefined parameters
