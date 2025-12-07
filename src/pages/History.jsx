@@ -6,7 +6,7 @@ import PageContainer from '../components/PageContainer'
 import SearchableSelect from '../components/SearchableSelect'
 import TemplateDetailModal from '../components/TemplateDetailModal'
 import { getAllCampaigns } from '../services/campaignService'
-import { getAllHistory } from '../services/emailHistoryService'
+import { getAllHistory, clearAllHistory } from '../services/emailHistoryService'
 import { getTemplateById, getAllTemplates } from '../services/templateRepositoryService'
 
 function History() {
@@ -63,6 +63,25 @@ function History() {
       alert('Failed to refresh email history')
     } finally {
       setRefreshing(false)
+    }
+  }
+
+  const handleClearHistory = async () => {
+    const confirmClear = window.confirm(
+      'Are you sure you want to clear all email history? This action cannot be undone.'
+    )
+    if (!confirmClear) return
+
+    setLoading(true)
+    try {
+      await clearAllHistory()
+      setHistory([])
+      alert('Email history cleared successfully!')
+    } catch (error) {
+      console.error('Error clearing email history:', error)
+      alert('Failed to clear email history')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -215,41 +234,62 @@ function History() {
     <PageContainer>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Email History</h2>
-        <button
-          className="btn btn-primary"
-          onClick={handleRefresh}
-          disabled={refreshing}
-          title="Refresh email history"
-        >
-          {refreshing ? (
-            <>
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                role="status"
-                aria-hidden="true"
-              ></span>
-              Refreshing...
-            </>
-          ) : (
-            <>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="currentColor"
-                className="bi bi-arrow-clockwise me-2"
-                viewBox="0 0 16 16"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
-                />
-                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
-              </svg>
-              Refresh
-            </>
-          )}
-        </button>
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-outline-danger"
+            onClick={handleClearHistory}
+            disabled={loading || refreshing || history.length === 0}
+            title="Clear all email history"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              className="bi bi-trash me-2"
+              viewBox="0 0 16 16"
+            >
+              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+              <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
+            </svg>
+            Clear History
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="Refresh email history"
+          >
+            {refreshing ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  className="bi bi-arrow-clockwise me-2"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
+                  />
+                  <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                </svg>
+                Refresh
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {history.length === 0 ? (
