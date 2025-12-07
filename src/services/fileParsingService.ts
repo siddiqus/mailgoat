@@ -2,14 +2,16 @@ import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 import { isValidEmail, parseEmailList } from '../utils/emailUtils'
 
+type DataRow = Record<string, string>
+
 /**
  * Validate data rows against template parameters
- * @param {Array} data - Parsed data rows
- * @param {Array} templateParams - Template parameters
- * @returns {Array} Array of error messages
+ * @param data - Parsed data rows
+ * @param templateParams - Template parameters
+ * @returns Array of error messages
  */
-export const validateDataRows = (data, templateParams) => {
-  const errors = []
+export const validateDataRows = (data: DataRow[], templateParams: string[]): string[] => {
+  const errors: string[] = []
 
   if (data.length === 0) {
     errors.push('File is empty')
@@ -76,14 +78,14 @@ export const validateDataRows = (data, templateParams) => {
 
 /**
  * Parse CSV file
- * @param {File} file - CSV file
- * @returns {Promise<Array>} Parsed data
+ * @param file - CSV file
+ * @returns Parsed data
  */
-export const parseCSVFile = file => {
+export const parseCSVFile = (file: File): Promise<DataRow[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       complete: results => {
-        const data = results.data.filter(row => {
+        const data = (results.data as DataRow[]).filter(row => {
           // Filter out empty rows
           return Object.values(row).some(val => val && val.trim() !== '')
         })
@@ -100,16 +102,16 @@ export const parseCSVFile = file => {
 
 /**
  * Parse Excel file (.xlsx, .xls)
- * @param {File} file - Excel file
- * @returns {Promise<Array>} Parsed data
+ * @param file - Excel file
+ * @returns Parsed data
  */
-export const parseExcelFile = file => {
+export const parseExcelFile = (file: File): Promise<DataRow[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
     reader.onload = e => {
       try {
-        const data = new Uint8Array(e.target.result)
+        const data = new Uint8Array(e.target!.result as ArrayBuffer)
         const workbook = XLSX.read(data, { type: 'array' })
 
         // Get the first sheet
@@ -120,7 +122,7 @@ export const parseExcelFile = file => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet, {
           raw: false, // Convert everything to strings
           defval: '', // Default value for empty cells
-        })
+        }) as DataRow[]
 
         // Filter out empty rows
         const filteredData = jsonData.filter(row => {
@@ -129,7 +131,7 @@ export const parseExcelFile = file => {
 
         // Convert all values to strings and trim whitespace
         const cleanedData = filteredData.map(row => {
-          const cleanRow = {}
+          const cleanRow: DataRow = {}
           Object.keys(row).forEach(key => {
             cleanRow[key] = String(row[key]).trim()
           })
@@ -138,7 +140,7 @@ export const parseExcelFile = file => {
 
         resolve(cleanedData)
       } catch (error) {
-        reject(new Error(`Failed to parse Excel file: ${error.message}`))
+        reject(new Error(`Failed to parse Excel file: ${(error as Error).message}`))
       }
     }
 
@@ -152,10 +154,10 @@ export const parseExcelFile = file => {
 
 /**
  * Parse file based on extension (CSV or Excel)
- * @param {File} file - File to parse
- * @returns {Promise<Array>} Parsed data
+ * @param file - File to parse
+ * @returns Parsed data
  */
-export const parseFile = async file => {
+export const parseFile = async (file: File): Promise<DataRow[]> => {
   const fileName = file.name.toLowerCase()
 
   if (fileName.endsWith('.csv')) {

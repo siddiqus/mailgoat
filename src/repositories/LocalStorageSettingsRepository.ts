@@ -1,7 +1,11 @@
+import { Settings } from '../types/models'
+
 /**
  * LocalStorage implementation for Settings Repository
  */
 class LocalStorageSettingsRepository {
+  private storageKey: string
+
   constructor() {
     this.storageKey = 'MailGoat_settings'
   }
@@ -25,7 +29,7 @@ class LocalStorageSettingsRepository {
    * @param {Object} settings - Settings object
    * @returns {Promise<Object>} Saved settings
    */
-  async saveSettings(settings) {
+  async saveSettings(settings: Settings) {
     try {
       const updatedSettings = {
         ...settings,
@@ -43,9 +47,8 @@ class LocalStorageSettingsRepository {
    * Get default settings
    * @private
    */
-  _getDefaultSettings() {
+  _getDefaultSettings(): Settings {
     return {
-      emailProvider: 'webhook', // 'webhook' or 'smtp'
       webhook: {
         url: '',
         headers: [],
@@ -56,21 +59,10 @@ class LocalStorageSettingsRepository {
           htmlBody: 'message',
         },
       },
-      smtp: {
-        host: '',
-        port: 587,
-        secure: false,
-        username: '',
-        password: '',
-        fromEmail: '',
-        fromName: '',
-      },
       supabase: {
         url: '',
         key: '',
       },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     }
   }
 }

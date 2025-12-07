@@ -1,10 +1,17 @@
+import type { Template } from '../types/models'
+
+interface PreparedEmailData {
+  subject: string
+  htmlBody: string
+}
+
 /**
  * Replace parameters in text with values
- * @param {string} text - Text containing {{parameter}} placeholders
- * @param {Object} values - Object with parameter values
- * @returns {string} Text with parameters replaced
+ * @param text - Text containing {{parameter}} placeholders
+ * @param values - Object with parameter values
+ * @returns Text with parameters replaced
  */
-export const replaceParameters = (text, values) => {
+export const replaceParameters = (text: string, values: Record<string, string>): string => {
   if (!text) return ''
   let result = text
   Object.keys(values).forEach(key => {
@@ -16,11 +23,14 @@ export const replaceParameters = (text, values) => {
 
 /**
  * Prepare email data from template and parameter values
- * @param {Object} template - Email template
- * @param {Object} parameterValues - Parameter values
- * @returns {Object} Email data with subject and htmlBody
+ * @param template - Email template
+ * @param parameterValues - Parameter values
+ * @returns Email data with subject and htmlBody
  */
-export const prepareEmailFromTemplate = (template, parameterValues) => {
+export const prepareEmailFromTemplate = (
+  template: Template,
+  parameterValues: Record<string, string>
+): PreparedEmailData => {
   const subject = replaceParameters(template.subject || '', parameterValues)
   const htmlBody = replaceParameters(template.htmlString || '', parameterValues)
 
@@ -29,10 +39,10 @@ export const prepareEmailFromTemplate = (template, parameterValues) => {
 
 /**
  * Generate sample CSV content for a template
- * @param {Object} template - Email template
- * @returns {string} CSV content
+ * @param template - Email template
+ * @returns CSV content
  */
-export const generateSampleCSV = template => {
+export const generateSampleCSV = (template: Template): string => {
   const requiredColumns = ['recipient', 'cc', ...(template.parameters || [])]
   const headers = requiredColumns.join(',')
   const sampleRow = requiredColumns
@@ -48,10 +58,10 @@ export const generateSampleCSV = template => {
 
 /**
  * Download CSV file
- * @param {string} csvContent - CSV content
- * @param {string} filename - Filename for download
+ * @param csvContent - CSV content
+ * @param filename - Filename for download
  */
-export const downloadCSV = (csvContent, filename) => {
+export const downloadCSV = (csvContent: string, filename: string): void => {
   const blob = new Blob([csvContent], { type: 'text/csv' })
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement('a')

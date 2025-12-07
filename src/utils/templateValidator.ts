@@ -1,14 +1,19 @@
+export interface ValidationResult {
+  isValid: boolean
+  errors: string[]
+}
+
 /**
  * Extract parameters from HTML string based on {{value}} pattern
- * @param {string} htmlString - HTML string to parse
- * @returns {Array<string>} Array of unique parameter names
+ * @param htmlString - HTML string to parse
+ * @returns Array of unique parameter names
  */
-export function extractParameters(htmlString) {
+export function extractParameters(htmlString: string): string[] {
   if (!htmlString) return []
 
   const parameterPattern = /\{\{([^}]+)\}\}/g
-  const parameters = new Set()
-  let match
+  const parameters = new Set<string>()
+  let match: RegExpExecArray | null
 
   while ((match = parameterPattern.exec(htmlString)) !== null) {
     const paramName = match[1].trim()
@@ -22,11 +27,11 @@ export function extractParameters(htmlString) {
 
 /**
  * Validate HTML string for proper structure
- * @param {string} htmlString - HTML string to validate
- * @returns {Object} Validation result with isValid and errors array
+ * @param htmlString - HTML string to validate
+ * @returns Validation result with isValid and errors array
  */
-export function validateHTML(htmlString) {
-  const errors = []
+export function validateHTML(htmlString: string): ValidationResult {
+  const errors: string[] = []
 
   if (!htmlString || htmlString.trim() === '') {
     return {
@@ -65,11 +70,11 @@ export function validateHTML(htmlString) {
 
 /**
  * Validate HTML tags are properly opened and closed
- * @param {string} htmlString - HTML string to validate
- * @returns {Object} Validation result
+ * @param htmlString - HTML string to validate
+ * @returns Validation result
  */
-function validateHTMLTags(htmlString) {
-  const errors = []
+function validateHTMLTags(htmlString: string): ValidationResult {
+  const errors: string[] = []
   const selfClosingTags = new Set([
     'area',
     'base',
@@ -92,8 +97,8 @@ function validateHTMLTags(htmlString) {
 
   // Extract all tags
   const tagPattern = /<\/?([a-zA-Z][a-zA-Z0-9]*)[^>]*>/g
-  const stack = []
-  let match
+  const stack: string[] = []
+  let match: RegExpExecArray | null
 
   while ((match = tagPattern.exec(cleanHtml)) !== null) {
     const fullTag = match[0]
@@ -136,10 +141,10 @@ function validateHTMLTags(htmlString) {
 
 /**
  * Check if HTML string is valid and ready for use
- * @param {string} htmlString - HTML string to check
- * @returns {boolean} True if valid
+ * @param htmlString - HTML string to check
+ * @returns True if valid
  */
-export function isValidTemplate(htmlString) {
+export function isValidTemplate(htmlString: string): boolean {
   const validation = validateHTML(htmlString)
   return validation.isValid
 }

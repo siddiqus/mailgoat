@@ -10,19 +10,34 @@ import {
   updateHistoryStatus,
 } from './emailHistoryService'
 import { replaceParameters } from './templateService'
+import type {
+  EmailData,
+  Template,
+  EmailSendOptions,
+  BulkEmailResult,
+  Settings,
+  WebhookHeader,
+  BodyMapping,
+} from '../types/models'
 
 const settingsRepository = new LocalStorageSettingsRepository()
 
+interface DataRow {
+  recipient: string
+  cc?: string
+  [key: string]: string | undefined
+}
+
 /**
  * Add tracking pixel to HTML body
- * @param {Object} params - Parameters object
- * @param {string} params.htmlBody - The HTML body content
- * @param {string} params.recipient - The recipient email address
- * @param {string} params.emailId - The unique email ID
- * @param {string} params.templateId - The template ID (optional)
- * @param {string} params.campaignId - The campaign ID (optional)
- * @param {string} params.supabaseUrl - The base url for supabase
- * @returns {string} HTML with tracking pixel appended
+ * @param params - Parameters object
+ * @param params.htmlBody - The HTML body content
+ * @param params.recipient - The recipient email address
+ * @param params.emailId - The unique email ID
+ * @param params.templateId - The template ID (optional)
+ * @param params.campaignId - The campaign ID (optional)
+ * @param params.supabaseUrl - The base url for supabase
+ * @returns HTML with tracking pixel appended
  */
 const addTrackingPixel = ({
   htmlBody,
@@ -31,7 +46,14 @@ const addTrackingPixel = ({
   templateId,
   campaignId,
   supabaseUrl,
-}) => {
+}: {
+  htmlBody: string
+  recipient: string
+  emailId: string
+  templateId?: string
+  campaignId?: string
+  supabaseUrl?: string
+}): string => {
   if (!supabaseUrl) {
     return htmlBody
   }
@@ -39,7 +61,7 @@ const addTrackingPixel = ({
   const trackingPixelUrl = getTrackingPixelUrl({
     emailId,
     campaignId,
-    templateId,
+    templateId: templateId || '',
     recipient,
     supabaseUrl,
   })
@@ -50,12 +72,15 @@ const addTrackingPixel = ({
 
 /**
  * Apply body mapping to email data based on webhook configuration
- * @param {Object} emailData - Email data with recipients, ccList, subject, htmlBody
- * @param {Object} bodyMapping - Mapping configuration from settings (property name mappings)
- * @returns {Object} Mapped email data
+ * @param emailData - Email data with recipients, ccList, subject, htmlBody
+ * @param bodyMapping - Mapping configuration from settings (property name mappings)
+ * @returns Mapped email data
  */
-export const applyBodyMapping = (emailData, bodyMapping) => {
-  const mappedBody = {}
+export const applyBodyMapping = (
+  emailData: EmailData,
+  bodyMapping: BodyMapping
+): Record<string, string> => {
+  const mappedBody: Record<string, string> = {}
 
   // Map each email field to its configured property name
   if (bodyMapping.recipients && bodyMapping.recipients.length > 0) {
@@ -64,7 +89,7 @@ export const applyBodyMapping = (emailData, bodyMapping) => {
     throw new Error('No recipients provided')
   }
   if (bodyMapping.ccList && bodyMapping.ccList.length > 0) {
-    mappedBody[bodyMapping.ccList] = emailData.ccList.join(';')
+    mappedBody[bodyMapping.ccList] = (emailData.ccList || []).join(';')
   } else {
     mappedBody[bodyMapping.ccList] = ''
   }
@@ -72,7 +97,7 @@ export const applyBodyMapping = (emailData, bodyMapping) => {
     mappedBody[bodyMapping.subject] = emailData.subject
   }
   if (bodyMapping.htmlBody) {
-    mappedBody[bodyMapping.htmlBody] = emailData.htmlBody || emailData.htmlString
+    mappedBody[bodyMapping.htmlBody] = emailData.htmlBody || emailData.htmlString || ''
   }
 
   return mappedBody
@@ -80,16 +105,19 @@ export const applyBodyMapping = (emailData, bodyMapping) => {
 
 /**
  * Send a single email using configured webhook
- * @param {Object} emailData - Email data with recipients, ccList, subject, htmlBody
- * @param {Object} options - Additional options (template, signal, campaignId)
- * @returns {Promise<Object>} Response from webhook
+ * @param emailData - Email data with recipients, ccList, subject, htmlBody
+ * @param options - Additional options (template, signal, campaignId)
+ * @returns Response from webhook
  */
-export const sendSingleEmail = async (emailData, options = {}) => {
+export const sendSingleEmail = async (
+  emailData: EmailData,
+  options: EmailSendOptions = {}
+): Promise<EmailData> => {
   // Use existing email ID if provided, otherwise generate a new one
   const emailId = emailData.id || generateEmailId()
 
   // Load settings to get tracking URL and webhook config
-  const settings = await settingsRepository.getSettings()
+  const settings = (await settingsRepository.getSettings()) as Settings
 
   // Extract templateId from options.template or options.templateId
   const templateId = options.template?.id || options.templateId
@@ -97,16 +125,16 @@ export const sendSingleEmail = async (emailData, options = {}) => {
   // Add tracking pixel to HTML body for the first recipient
   const primaryRecipient = emailData.recipients[0]
   const htmlBodyWithTracking = addTrackingPixel({
-    htmlBody: emailData.htmlBody || emailData.htmlString,
+    htmlBody: emailData.htmlBody || emailData.htmlString || '',
     recipient: primaryRecipient,
     emailId: emailId,
     templateId: templateId,
-    campaignId: options.campaignId,
+    campaignId: options.campaignId || undefined,
     supabaseUrl: settings.supabase?.url,
   })
 
   // Create modified email data with tracking pixel
-  const emailDataWithTracking = {
+  const emailDataWithTracking: EmailData = {
     ...emailData,
     htmlBody: htmlBodyWithTracking,
   }
@@ -119,7 +147,7 @@ export const sendSingleEmail = async (emailData, options = {}) => {
   const mappedBody = applyBodyMapping(emailDataWithTracking, settings.webhook.bodyMapping)
 
   // Prepare headers
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
 
@@ -130,7 +158,11 @@ export const sendSingleEmail = async (emailData, options = {}) => {
     }
   })
 
-  const config = {
+  const config: {
+    headers: Record<string, string>
+    timeout: number
+    signal?: AbortSignal
+  } = {
     headers,
     timeout: 30000, // 30 second timeout
   }
@@ -147,18 +179,22 @@ export const sendSingleEmail = async (emailData, options = {}) => {
   }
 }
 
-function sleep(ms) {
+function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 /**
  * Send a single email with outbox pattern (creates pending record, sends, then updates to sent)
- * @param {Object} emailData - Email data with recipients, ccList, subject, htmlBody
- * @param {Object} options - Additional options (template, signal, campaignId)
- * @param {string} historyId - History record ID to update
- * @returns {Promise<void>}
+ * @param emailData - Email data with recipients, ccList, subject, htmlBody
+ * @param options - Additional options (template, signal, campaignId)
+ * @param historyId - History record ID to update
+ * @returns void
  */
-export const sendEmailWithOutbox = async (emailData, options = {}, historyId = null) => {
+export const sendEmailWithOutbox = async (
+  emailData: EmailData,
+  options: EmailSendOptions = {},
+  historyId: string | null = null
+): Promise<void> => {
   try {
     // Send the email
     await sendSingleEmail(emailData, options)
@@ -188,12 +224,15 @@ export const sendEmailWithOutbox = async (emailData, options = {}, historyId = n
 /**
  * Send bulk emails using outbox pattern (non-blocking)
  * Creates pending records first, then sends emails asynchronously
- * @param {Array<Object>} bulkEmailData - Array of email data objects
- * @param {Object} options - Additional options (template, campaignId)
- * @returns {Promise<Array>} Array of created history record IDs
+ * @param bulkEmailData - Array of email data objects
+ * @param options - Additional options (template, campaignId)
+ * @returns Array of created history record IDs
  */
-export const sendBulkEmailsAsync = async (bulkEmailData, options = {}) => {
-  const historyIds = []
+export const sendBulkEmailsAsync = async (
+  bulkEmailData: EmailData[],
+  options: EmailSendOptions = {}
+): Promise<string[]> => {
+  const historyIds: string[] = []
 
   bulkEmailData.forEach(email => {
     email.id = generateEmailId()
@@ -201,13 +240,16 @@ export const sendBulkEmailsAsync = async (bulkEmailData, options = {}) => {
 
   // First, create all pending history records
   for (const emailData of bulkEmailData) {
-    const emailDataWithId = {
+    const emailDataWithId: EmailData = {
       ...emailData, // contains id
       campaignId: options.campaignId || null,
     }
 
     try {
-      const historyRecord = await createPendingHistoryRecord(emailDataWithId, options.template)
+      const historyRecord = await createPendingHistoryRecord(
+        emailDataWithId,
+        options.template as Template
+      )
       historyIds.push(historyRecord.id)
     } catch (error) {
       console.error('Failed to create pending history record:', error)
@@ -222,13 +264,17 @@ export const sendBulkEmailsAsync = async (bulkEmailData, options = {}) => {
 
 /**
  * Background worker to send bulk emails (runs asynchronously)
- * @param {Array<Object>} bulkEmailData - Array of email data objects
- * @param {Object} options - Additional options (template, campaignId)
- * @param {Array<string>} historyIds - Array of history record IDs
+ * @param bulkEmailData - Array of email data objects
+ * @param options - Additional options (template, campaignId)
+ * @param historyIds - Array of history record IDs
  */
-const sendBulkEmailsInBackground = async (bulkEmailData, options, historyIds) => {
+const sendBulkEmailsInBackground = async (
+  bulkEmailData: EmailData[],
+  options: EmailSendOptions,
+  historyIds: string[]
+): Promise<void> => {
   for (let i = 0; i < bulkEmailData.length; i++) {
-    const emailData = {
+    const emailData: EmailData = {
       ...bulkEmailData[i],
       campaignId: options.campaignId || null, // Add campaignId to each email data
     }
@@ -252,13 +298,15 @@ const sendBulkEmailsInBackground = async (bulkEmailData, options, historyIds) =>
 
 /**
  * Send bulk emails using configured webhook (legacy synchronous method)
- * @param {Array<Object>} bulkEmailData - Array of email data objects
- * @param {AbortSignal} signal - Optional abort signal for cancellation
- * @param {Object} options - Additional options (templateName, template, campaignId)
- * @returns {Promise<Object>} Response from webhook with campaignId
+ * @param bulkEmailData - Array of email data objects
+ * @param options - Additional options (templateName, template, campaignId)
+ * @returns Response from webhook with campaignId
  */
-export const sendBulkEmails = async (bulkEmailData, options = {}) => {
-  const results = {
+export const sendBulkEmails = async (
+  bulkEmailData: EmailData[],
+  options: EmailSendOptions = {}
+): Promise<BulkEmailResult> => {
+  const results: BulkEmailResult = {
     success: [],
     failures: [],
     campaignId: options.campaignId || null, // Include campaignId in results
@@ -275,7 +323,7 @@ export const sendBulkEmails = async (bulkEmailData, options = {}) => {
 
       // Save to history after successful send
       try {
-        await saveToHistory(emailData, options.template)
+        await saveToHistory(emailData, options.template as Template)
       } catch (historyError) {
         console.error('Failed to save email to history:', historyError)
       }
@@ -283,7 +331,10 @@ export const sendBulkEmails = async (bulkEmailData, options = {}) => {
       results.success.push(emailData.recipients)
       await sleep(1000)
     } catch (error) {
-      if (error.name === 'CanceledError' || error.message === 'Operation cancelled') {
+      if (
+        (error as Error).name === 'CanceledError' ||
+        (error as Error).message === 'Operation cancelled'
+      ) {
         throw error // Re-throw cancellation errors
       }
       results.failures.push(emailData.recipients)
@@ -295,13 +346,17 @@ export const sendBulkEmails = async (bulkEmailData, options = {}) => {
 
 /**
  * Test webhook with sample data
- * @param {string} webhookUrl - Webhook URL
- * @param {Array} webhookHeaders - Custom headers
- * @param {Object} bodyMapping - Body mapping configuration
- * @returns {Promise<Object>} Test result
+ * @param webhookUrl - Webhook URL
+ * @param webhookHeaders - Custom headers
+ * @param bodyMapping - Body mapping configuration
+ * @returns Test result
  */
-export const testWebhook = async (webhookUrl, webhookHeaders, bodyMapping) => {
-  const testPayload = {
+export const testWebhook = async (
+  webhookUrl: string,
+  webhookHeaders: WebhookHeader[],
+  bodyMapping: BodyMapping
+): Promise<{ ok: boolean; status: number; data: unknown }> => {
+  const testPayload: EmailData = {
     recipients: ['test@example.com'],
     ccList: ['cc@example.com'],
     subject: 'Test Email Subject',
@@ -311,7 +366,7 @@ export const testWebhook = async (webhookUrl, webhookHeaders, bodyMapping) => {
   // Apply body mapping
   const mappedBody = applyBodyMapping(testPayload, bodyMapping)
 
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
 
@@ -337,19 +392,18 @@ export const testWebhook = async (webhookUrl, webhookHeaders, bodyMapping) => {
 
 /**
  * Prepare bulk email data from data rows and template
- * @param {Array} dataRows - Data rows
- * @param {Object} template - Email template
- * @param {Function} replaceParameters - Function to replace parameters
- * @returns {Array} Bulk email data
+ * @param dataRows - Data rows
+ * @param template - Email template
+ * @returns Bulk email data
  */
-export const prepareBulkEmailData = (dataRows, template) => {
+export const prepareBulkEmailData = (dataRows: DataRow[], template: Template): EmailData[] => {
   return dataRows.map(row => {
-    const emailSubject = replaceParameters(template.subject || '', row)
-    const emailBody = replaceParameters(template.htmlString || '', row)
+    const emailSubject = replaceParameters(template.subject || '', row as Record<string, string>)
+    const emailBody = replaceParameters(template.htmlString || '', row as Record<string, string>)
 
     const recipientList = parseEmailList(row.recipient)
 
-    const ccListArray = parseEmailList(row.cc)
+    const ccListArray = parseEmailList(row.cc || '')
 
     return {
       recipients: recipientList,

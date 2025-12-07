@@ -1,18 +1,21 @@
 import { v4 as uuidv4 } from 'uuid'
+import type { EmailHistoryRecord } from '../types/models'
 
 /**
  * LocalStorage repository for email history
  */
 class EmailHistoryRepository {
+  private storageKey: string
+
   constructor() {
     this.storageKey = 'MailGoat_emailHistory'
   }
 
   /**
    * Get all email history records
-   * @returns {Promise<Array>} Array of email history objects
+   * @returns Array of email history objects
    */
-  async getAll() {
+  async getAll(): Promise<EmailHistoryRecord[]> {
     try {
       const data = localStorage.getItem(this.storageKey)
       return data ? JSON.parse(data) : []
@@ -24,27 +27,27 @@ class EmailHistoryRepository {
 
   /**
    * Get a single email history record by ID
-   * @param {string} id - Email history ID
-   * @returns {Promise<Object|null>} Email history object or null
+   * @param id - Email history ID
+   * @returns Email history object or null
    */
-  async getById(id) {
+  async getById(id: string): Promise<EmailHistoryRecord | null> {
     const history = await this.getAll()
     return history.find(h => h.id === id) || null
   }
 
   /**
    * Save a new email to history
-   * @param {Object} emailData - Email data to save
-   * @returns {Promise<Object>} Saved email history record
+   * @param emailData - Email data to save
+   * @returns Saved email history record
    */
-  async create(emailData) {
+  async create(emailData: Partial<EmailHistoryRecord>): Promise<EmailHistoryRecord> {
     const history = await this.getAll()
-    const newRecord = {
+    const newRecord: EmailHistoryRecord = {
       emailId: emailData.id,
       ...emailData,
       id: uuidv4(), // remove id from emailData and generate history ID
       sentAt: emailData.sentAt || new Date().toISOString(),
-    }
+    } as EmailHistoryRecord
     history.unshift(newRecord) // Add to beginning of array
     this._save(history)
     return newRecord
@@ -52,11 +55,14 @@ class EmailHistoryRepository {
 
   /**
    * Update an email history record
-   * @param {string} id - Email history ID
-   * @param {Object} updates - Fields to update
-   * @returns {Promise<Object|null>} Updated record or null if not found
+   * @param id - Email history ID
+   * @param updates - Fields to update
+   * @returns Updated record or null if not found
    */
-  async update(id, updates) {
+  async update(
+    id: string,
+    updates: Partial<EmailHistoryRecord>
+  ): Promise<EmailHistoryRecord | null> {
     const history = await this.getAll()
     const index = history.findIndex(h => h.id === id)
 
@@ -76,10 +82,10 @@ class EmailHistoryRepository {
 
   /**
    * Delete an email history record
-   * @param {string} id - Email history ID
-   * @returns {Promise<boolean>} True if deleted successfully
+   * @param id - Email history ID
+   * @returns True if deleted successfully
    */
-  async delete(id) {
+  async delete(id: string): Promise<boolean> {
     const history = await this.getAll()
     const filteredHistory = history.filter(h => h.id !== id)
 
@@ -93,9 +99,9 @@ class EmailHistoryRepository {
 
   /**
    * Clear all email history
-   * @returns {Promise<void>}
+   * @returns void
    */
-  async clear() {
+  async clear(): Promise<void> {
     this._save([])
   }
 
@@ -103,7 +109,7 @@ class EmailHistoryRepository {
    * Save history to localStorage
    * @private
    */
-  _save(history) {
+  private _save(history: EmailHistoryRecord[]): void {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(history))
     } catch (error) {

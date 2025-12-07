@@ -1,13 +1,17 @@
 import { getEmailInteractions } from '../utils/supabaseClient'
+import type { AnalyticsParams, AnalyticsResult, TrackingPixelParams } from '../types/models'
 
 /**
  * Get email interactions analytics from Supabase using the JS client
- * @param {Object} params - Query parameters
- * @param {string} [params.campaignId] - Campaign ID to filter by
- * @param {string} [params.templateId] - Template ID to filter by
- * @returns {Promise<{success: boolean, data: Array, count: number}>}
+ * @param params - Query parameters
+ * @param params.campaignId - Campaign ID to filter by
+ * @param params.templateId - Template ID to filter by
+ * @returns Analytics result with success status, data and count
  */
-export async function getEmailAnalytics({ campaignId, templateId }) {
+export async function getEmailAnalytics({
+  campaignId,
+  templateId,
+}: AnalyticsParams): Promise<AnalyticsResult> {
   // Validate that at least one filter is provided
   if (!campaignId && !templateId) {
     throw new Error('At least one of campaignId or templateId must be provided')
@@ -25,15 +29,21 @@ export async function getEmailAnalytics({ campaignId, templateId }) {
 /**
  * Get tracking pixel URL for embedding in emails
  * Note: This doesn't use the JS client, just constructs the URL
- * @param {Object} params - Pixel parameters
- * @param {string} params.emailId - Email ID
- * @param {string} params.templateId - Template ID
- * @param {string} params.recipient - Recipient email
- * @param {string} [params.campaignId] - Campaign ID
- * @param {string} [params.supabaseUrl] - Campaign ID
- * @returns {Promise<string>} - The tracking pixel URL
+ * @param params - Pixel parameters
+ * @param params.emailId - Email ID
+ * @param params.templateId - Template ID
+ * @param params.recipient - Recipient email
+ * @param params.campaignId - Campaign ID
+ * @param params.supabaseUrl - Supabase URL
+ * @returns The tracking pixel URL
  */
-export function getTrackingPixelUrl({ emailId, campaignId, templateId, recipient, supabaseUrl }) {
+export function getTrackingPixelUrl({
+  emailId,
+  campaignId,
+  templateId,
+  recipient,
+  supabaseUrl,
+}: TrackingPixelParams): string {
   // Build query parameters
   const params = new URLSearchParams()
   if (emailId) params.append('emailId', emailId)

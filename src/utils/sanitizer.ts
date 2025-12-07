@@ -1,15 +1,21 @@
 import DOMPurify from 'dompurify'
 
+export interface SanitizeOptions {
+  ALLOWED_TAGS?: string[]
+  ALLOWED_ATTR?: string[]
+  ALLOW_DATA_ATTR?: boolean
+}
+
 /**
  * Sanitize HTML string to prevent XSS attacks
- * @param {string} html - HTML string to sanitize
- * @param {Object} options - DOMPurify configuration options
- * @returns {string} Sanitized HTML string
+ * @param html - HTML string to sanitize
+ * @param options - DOMPurify configuration options
+ * @returns Sanitized HTML string
  */
-export const sanitizeHtml = (html, options = {}) => {
+export const sanitizeHtml = (html: string, options: SanitizeOptions = {}): string => {
   if (!html) return ''
 
-  const defaultOptions = {
+  const defaultOptions: SanitizeOptions = {
     ALLOWED_TAGS: [
       'p',
       'br',
@@ -67,10 +73,10 @@ export const sanitizeHtml = (html, options = {}) => {
 
 /**
  * Sanitize HTML with strict configuration (for user-generated content)
- * @param {string} html - HTML string to sanitize
- * @returns {string} Sanitized HTML string
+ * @param html - HTML string to sanitize
+ * @returns Sanitized HTML string
  */
-export const sanitizeHtmlStrict = html => {
+export const sanitizeHtmlStrict = (html: string): string => {
   return sanitizeHtml(html, {
     ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li'],
     ALLOWED_ATTR: [],

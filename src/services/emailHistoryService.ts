@@ -1,26 +1,28 @@
 import { v4 as uuidv4 } from 'uuid'
 import EmailHistoryRepository from '../repositories/EmailHistoryRepository'
 import { incrementCampaignEmailCount } from './campaignService'
+import type { Template, EmailData, EmailHistoryRecord } from '../types/models'
 
 const historyRepository = new EmailHistoryRepository()
 
 /**
  * Generate a unique email ID
- * @returns {string} UUID for the email
+ * @returns UUID for the email
  */
-export const generateEmailId = () => {
+export const generateEmailId = (): string => {
   return uuidv4()
 }
 
 /**
  * Save a sent email to history
- * @param {Object} emailData - Email data
- * @param {string} templateName - Name of template used (or 'Custom' for no template)
- * @param {Object} template - Template object (optional)
- * @param {string} emailId - Pre-generated email ID (optional)
- * @returns {Promise<Object>} Saved history record
+ * @param emailData - Email data
+ * @param template - Template object
+ * @returns Saved history record
  */
-export const saveToHistory = async (emailData, template) => {
+export const saveToHistory = async (
+  emailData: EmailData,
+  template: Template
+): Promise<EmailHistoryRecord> => {
   const historyRecord = {
     id: emailData.id, // Will be used by repository if provided
     templateName: template.name,
@@ -29,8 +31,8 @@ export const saveToHistory = async (emailData, template) => {
     recipients: emailData.recipients,
     ccList: emailData.ccList || [],
     subject: emailData.subject,
-    htmlBody: emailData.htmlBody || emailData.htmlString,
-    status: 'sent',
+    htmlBody: emailData.htmlBody || emailData.htmlString || '',
+    status: 'sent' as const,
     campaignId: emailData.campaignId || null, // Include campaignId for tracking
   }
 
@@ -49,11 +51,14 @@ export const saveToHistory = async (emailData, template) => {
 
 /**
  * Create a pending history record (outbox pattern)
- * @param {Object} emailData - Email data
- * @param {Object} template - Template object
- * @returns {Promise<Object>} Created pending history record
+ * @param emailData - Email data
+ * @param template - Template object
+ * @returns Created pending history record
  */
-export const createPendingHistoryRecord = async (emailData, template) => {
+export const createPendingHistoryRecord = async (
+  emailData: EmailData,
+  template: Template
+): Promise<EmailHistoryRecord> => {
   const historyRecord = {
     id: emailData.id, // Will be used by repository if provided
     templateName: template.name,
@@ -62,8 +67,8 @@ export const createPendingHistoryRecord = async (emailData, template) => {
     recipients: emailData.recipients,
     ccList: emailData.ccList || [],
     subject: emailData.subject,
-    htmlBody: emailData.htmlBody || emailData.htmlString,
-    status: 'pending',
+    htmlBody: emailData.htmlBody || emailData.htmlString || '',
+    status: 'pending' as const,
     campaignId: emailData.campaignId || null,
   }
 
@@ -72,44 +77,47 @@ export const createPendingHistoryRecord = async (emailData, template) => {
 
 /**
  * Get all email history
- * @returns {Promise<Array>} Array of email history records
+ * @returns Array of email history records
  */
-export const getAllHistory = async () => {
+export const getAllHistory = async (): Promise<EmailHistoryRecord[]> => {
   return await historyRepository.getAll()
 }
 
 /**
  * Get a single email history record
- * @param {string} id - History record ID
- * @returns {Promise<Object|null>} History record or null
+ * @param id - History record ID
+ * @returns History record or null
  */
-export const getHistoryById = async id => {
+export const getHistoryById = async (id: string): Promise<EmailHistoryRecord | null> => {
   return await historyRepository.getById(id)
 }
 
 /**
  * Delete a history record
- * @param {string} id - History record ID
- * @returns {Promise<boolean>} True if deleted successfully
+ * @param id - History record ID
+ * @returns True if deleted successfully
  */
-export const deleteHistory = async id => {
+export const deleteHistory = async (id: string): Promise<boolean> => {
   return await historyRepository.delete(id)
 }
 
 /**
  * Update email history record status
- * @param {string} id - History record ID
- * @param {string} status - New status ('pending', 'sent', 'failed')
- * @returns {Promise<Object|null>} Updated record or null
+ * @param id - History record ID
+ * @param status - New status ('pending', 'sent', 'failed')
+ * @returns Updated record or null
  */
-export const updateHistoryStatus = async (id, status) => {
+export const updateHistoryStatus = async (
+  id: string,
+  status: 'pending' | 'sent' | 'failed'
+): Promise<EmailHistoryRecord | null> => {
   return await historyRepository.update(id, { status })
 }
 
 /**
  * Clear all email history
- * @returns {Promise<void>}
+ * @returns void
  */
-export const clearAllHistory = async () => {
+export const clearAllHistory = async (): Promise<void> => {
   return await historyRepository.clear()
 }

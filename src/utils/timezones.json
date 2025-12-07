@@ -1,0 +1,462 @@
+[
+  {
+    "windowsTime": "Africa Central Standard Time",
+    "city": "Gaborone / Harare",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "Africa Eastern Standard Time",
+    "city": "Nairobi",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "Africa South Standard Time",
+    "city": "Johannesburg",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "Africa West Standard Time",
+    "city": "Lagos",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "E. Africa Standard Time",
+    "city": "Nairobi",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "Egypt Standard Time",
+    "city": "Cairo",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "Morocco Standard Time",
+    "city": "Casablanca",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "South Africa Standard Time",
+    "city": "Pretoria",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "Sudan Standard Time",
+    "city": "Khartoum",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "West Central Africa Standard Time",
+    "city": "Bangui",
+    "region": "Africa"
+  },
+  {
+    "windowsTime": "Pacific Standard Time",
+    "city": "Los Angeles / Vancouver",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Pacific Standard Time (Mexico)",
+    "city": "Tijuana",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "US Mountain Standard Time",
+    "city": "Phoenix",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Mountain Standard Time",
+    "city": "Denver",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Mountain Standard Time (Mexico)",
+    "city": "Chihuahua",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Central Standard Time",
+    "city": "Chicago",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Central Standard Time (Mexico)",
+    "city": "Mexico City",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Canada Central Standard Time",
+    "city": "Regina",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "SA Pacific Standard Time",
+    "city": "Bogotá / Lima",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Eastern Standard Time",
+    "city": "New York / Toronto",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Eastern Standard Time (Mexico)",
+    "city": "Cancún",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Haiti Standard Time",
+    "city": "Port-au-Prince",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Cuba Standard Time",
+    "city": "Havana",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "SA Eastern Standard Time",
+    "city": "Buenos Aires",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Greenland Standard Time",
+    "city": "Nuuk",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Newfoundland Standard Time",
+    "city": "St. John's",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Atlantic Standard Time",
+    "city": "Halifax",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Venezuela Standard Time",
+    "city": "Caracas",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Tocantins Standard Time",
+    "city": "Palmas",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Paraguay Standard Time",
+    "city": "Asunción",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "E. South America Standard Time",
+    "city": "São Paulo",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Central Brazilian Standard Time",
+    "city": "Cuiabá",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Pacific SA Standard Time",
+    "city": "Santiago",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "SA Western Standard Time",
+    "city": "La Paz",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Magallanes Standard Time",
+    "city": "Punta Arenas",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Turks and Caicos Standard Time",
+    "city": "Turks & Caicos",
+    "region": "Americas"
+  },
+  {
+    "windowsTime": "Afghanistan Standard Time",
+    "city": "Kabul",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Arabian Standard Time",
+    "city": "Riyadh",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Armenia Standard Time",
+    "city": "Yerevan",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Azerbaijan Standard Time",
+    "city": "Baku",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Bangladesh Standard Time",
+    "city": "Dhaka",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Central Asia Standard Time",
+    "city": "Almaty",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "China Standard Time",
+    "city": "Beijing",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "India Standard Time",
+    "city": "Delhi",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Iran Standard Time",
+    "city": "Tehran",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Israel Standard Time",
+    "city": "Jerusalem",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Jordan Standard Time",
+    "city": "Amman",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Korea Standard Time",
+    "city": "Seoul",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Myanmar Standard Time",
+    "city": "Yangon",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Nepal Standard Time",
+    "city": "Kathmandu",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Pakistan Standard Time",
+    "city": "Karachi",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Sri Lanka Standard Time",
+    "city": "Colombo",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Taipei Standard Time",
+    "city": "Taipei",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Tokyo Standard Time",
+    "city": "Tokyo",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "West Asia Standard Time",
+    "city": "Tashkent",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "Yakutsk Standard Time",
+    "city": "Yakutsk",
+    "region": "Asia"
+  },
+  {
+    "windowsTime": "AUS Central Standard Time",
+    "city": "Darwin",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "AUS Eastern Standard Time",
+    "city": "Sydney",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "Cen. Australia Standard Time",
+    "city": "Adelaide",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "E. Australia Standard Time",
+    "city": "Brisbane",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "Tasmania Standard Time",
+    "city": "Hobart",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "Lord Howe Standard Time",
+    "city": "Lord Howe Island",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "New Zealand Standard Time",
+    "city": "Wellington",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "Fiji Standard Time",
+    "city": "Suva",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "West Pacific Standard Time",
+    "city": "Port Moresby",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "Central Pacific Standard Time",
+    "city": "Nouméa",
+    "region": "Australia/Oceania"
+  },
+  {
+    "windowsTime": "GMT Standard Time",
+    "city": "London",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Greenwich Standard Time",
+    "city": "Reykjavik",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "W. Europe Standard Time",
+    "city": "Berlin / Paris / Rome",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Romance Standard Time",
+    "city": "Brussels",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Central Europe Standard Time",
+    "city": "Budapest",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Central European Standard Time",
+    "city": "Warsaw",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "E. Europe Standard Time",
+    "city": "Bucharest",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "GTB Standard Time",
+    "city": "Athens / Istanbul",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Russian Standard Time",
+    "city": "Moscow",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "FLE Standard Time",
+    "city": "Helsinki / Kyiv",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Turkey Standard Time",
+    "city": "Istanbul",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Belarus Standard Time",
+    "city": "Minsk",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Kaliningrad Standard Time",
+    "city": "Kaliningrad",
+    "region": "Europe"
+  },
+  {
+    "windowsTime": "Arab Standard Time",
+    "city": "Baghdad",
+    "region": "Middle East"
+  },
+  {
+    "windowsTime": "Middle East Standard Time",
+    "city": "Beirut",
+    "region": "Middle East"
+  },
+  {
+    "windowsTime": "Azerbaijan Standard Time",
+    "city": "Baku",
+    "region": "Middle East"
+  },
+  {
+    "windowsTime": "Iran Standard Time",
+    "city": "Tehran",
+    "region": "Middle East"
+  },
+  {
+    "windowsTime": "Arabian Standard Time",
+    "city": "Riyadh",
+    "region": "Middle East"
+  },
+  {
+    "windowsTime": "UTC",
+    "city": "UTC",
+    "region": "Special/UTC"
+  },
+  {
+    "windowsTime": "UTC+12",
+    "city": "UTC+12",
+    "region": "Special/UTC"
+  },
+  {
+    "windowsTime": "UTC+13",
+    "city": "UTC+13",
+    "region": "Special/UTC"
+  },
+  {
+    "windowsTime": "UTC−12",
+    "city": "UTC−12",
+    "region": "Special/UTC"
+  },
+  {
+    "windowsTime": "Dateline Standard Time",
+    "city": "International Date Line West",
+    "region": "Special/UTC"
+  },
+  {
+    "windowsTime": "Samoa Standard Time",
+    "city": "Apia",
+    "region": "Special/UTC"
+  },
+  {
+    "windowsTime": "Azores Standard Time",
+    "city": "Azores",
+    "region": "Special/UTC"
+  },
+  {
+    "windowsTime": "Cape Verde Standard Time",
+    "city": "Cape Verde",
+    "region": "Special/UTC"
+  }
+]

@@ -1,82 +1,89 @@
 import LocalStorageTemplateRepository from '../repositories/LocalStorageTemplateRepository'
+import type { Template, TemplateCreateData, ImportResult } from '../types/models'
 
 const templateRepository = new LocalStorageTemplateRepository()
 
 /**
  * Get all templates
- * @returns {Promise<Array>} Array of templates
+ * @returns Array of templates
  */
-export const getAllTemplates = async () => {
+export const getAllTemplates = async (): Promise<Template[]> => {
   return await templateRepository.getAll()
 }
 
 /**
  * Get template by ID
- * @param {string} id - Template ID
- * @returns {Promise<Object|null>} Template or null
+ * @param id - Template ID
+ * @returns Template or null
  */
-export const getTemplateById = async id => {
+export const getTemplateById = async (id: string): Promise<Template | null> => {
   return await templateRepository.getById(id)
 }
 
 /**
  * Create new template
- * @param {Object} templateData - Template data
- * @returns {Promise<Object>} Created template
+ * @param templateData - Template data
+ * @returns Created template
  */
-export const createTemplate = async templateData => {
+export const createTemplate = async (templateData: TemplateCreateData): Promise<Template> => {
   return await templateRepository.create(templateData)
 }
 
 /**
  * Update existing template
- * @param {string} id - Template ID
- * @param {Object} templateData - Updated template data
- * @returns {Promise<Object>} Updated template
+ * @param id - Template ID
+ * @param templateData - Updated template data
+ * @returns Updated template
  */
-export const updateTemplate = async (id, templateData) => {
+export const updateTemplate = async (
+  id: string,
+  templateData: Partial<TemplateCreateData>
+): Promise<Template> => {
   return await templateRepository.update(id, templateData)
 }
 
 /**
  * Delete template
- * @param {string} id - Template ID
- * @returns {Promise<boolean>} True if deleted
+ * @param id - Template ID
+ * @returns True if deleted
  */
-export const deleteTemplate = async id => {
+export const deleteTemplate = async (id: string): Promise<boolean> => {
   return await templateRepository.delete(id)
 }
 
 /**
  * Export all templates to JSON
- * @returns {Promise<string>} JSON string of all templates
+ * @returns JSON string of all templates
  */
-export const exportTemplates = async () => {
+export const exportTemplates = async (): Promise<string> => {
   const templates = await templateRepository.getAll()
   return JSON.stringify(templates, null, 2)
 }
 
 /**
  * Import templates from JSON
- * @param {string} jsonString - JSON string containing templates
- * @param {boolean} merge - If true, merge with existing templates. If false, replace all templates.
- * @returns {Promise<Object>} Object with success count and any errors
+ * @param jsonString - JSON string containing templates
+ * @param merge - If true, merge with existing templates. If false, replace all templates.
+ * @returns Object with success count and any errors
  */
-export const importTemplates = async (jsonString, merge = true) => {
+export const importTemplates = async (
+  jsonString: string,
+  merge: boolean = true
+): Promise<ImportResult> => {
   try {
-    const importedTemplates = JSON.parse(jsonString)
+    const importedTemplates = JSON.parse(jsonString) as unknown[]
 
     if (!Array.isArray(importedTemplates)) {
       throw new Error('Invalid format: JSON must contain an array of templates')
     }
 
     const existingTemplates = merge ? await templateRepository.getAll() : []
-    const errors = []
+    const errors: string[] = []
     let successCount = 0
 
     // Validate each template
     for (let i = 0; i < importedTemplates.length; i++) {
-      const template = importedTemplates[i]
+      const template = importedTemplates[i] as Partial<Template>
 
       if (!template.name) {
         errors.push(`Template ${i + 1}: Missing required field 'name'`)
@@ -90,7 +97,7 @@ export const importTemplates = async (jsonString, merge = true) => {
 
       // Check for duplicate names in existing templates
       const isDuplicate = existingTemplates.some(
-        t => t.name.toLowerCase() === template.name.toLowerCase()
+        t => t.name.toLowerCase() === template.name!.toLowerCase()
       )
 
       if (isDuplicate && merge) {
@@ -107,21 +114,25 @@ export const importTemplates = async (jsonString, merge = true) => {
 
     // If validation passed, import templates
     const validTemplates = importedTemplates.filter(template => {
+      const t = template as Partial<Template>
       return (
-        template.name &&
-        template.htmlString &&
+        t.name &&
+        t.htmlString &&
         (!merge ||
-          !existingTemplates.some(t => t.name.toLowerCase() === template.name.toLowerCase()))
+          !existingTemplates.some(
+            existing => existing.name.toLowerCase() === t.name!.toLowerCase()
+          ))
       )
     })
 
     // Create templates one by one
     for (const template of validTemplates) {
+      const t = template as Partial<Template>
       await templateRepository.create({
-        name: template.name,
-        subject: template.subject || '',
-        htmlString: template.htmlString,
-        parameters: template.parameters || [],
+        name: t.name!,
+        subject: t.subject || '',
+        htmlString: t.htmlString!,
+        parameters: t.parameters || [],
       })
     }
 

@@ -1,20 +1,21 @@
 import { v4 as uuidv4 } from 'uuid'
-import ITemplateRepository from './ITemplateRepository'
+import type { Template, TemplateCreateData } from '../types/models'
 
 /**
  * LocalStorage implementation of the Template Repository
  */
-class LocalStorageTemplateRepository extends ITemplateRepository {
+class LocalStorageTemplateRepository {
+  private storageKey: string
+
   constructor() {
-    super()
     this.storageKey = 'MailGoat_templates'
   }
 
   /**
    * Get all templates from localStorage
-   * @returns {Promise<Array>} Array of template objects
+   * @returns Array of template objects
    */
-  async getAll() {
+  async getAll(): Promise<Template[]> {
     try {
       const data = localStorage.getItem(this.storageKey)
       return data ? JSON.parse(data) : []
@@ -26,20 +27,20 @@ class LocalStorageTemplateRepository extends ITemplateRepository {
 
   /**
    * Get a template by ID
-   * @param {string} id - Template ID
-   * @returns {Promise<Object|null>} Template object or null if not found
+   * @param id - Template ID
+   * @returns Template object or null if not found
    */
-  async getById(id) {
+  async getById(id: string): Promise<Template | null> {
     const templates = await this.getAll()
     return templates.find(t => t.id === id) || null
   }
 
   /**
    * Create a new template
-   * @param {Object} template - Template object without ID
-   * @returns {Promise<Object>} Created template with ID
+   * @param template - Template object without ID
+   * @returns Created template with ID
    */
-  async create(template) {
+  async create(template: TemplateCreateData): Promise<Template> {
     const templates = await this.getAll()
     const newTemplate = {
       ...template,
@@ -54,11 +55,11 @@ class LocalStorageTemplateRepository extends ITemplateRepository {
 
   /**
    * Update an existing template
-   * @param {string} id - Template ID
-   * @param {Object} template - Updated template data
-   * @returns {Promise<Object>} Updated template
+   * @param id - Template ID
+   * @param template - Updated template data
+   * @returns Updated template
    */
-  async update(id, template) {
+  async update(id: string, template: Partial<TemplateCreateData>): Promise<Template> {
     const templates = await this.getAll()
     const index = templates.findIndex(t => t.id === id)
 
@@ -80,10 +81,10 @@ class LocalStorageTemplateRepository extends ITemplateRepository {
 
   /**
    * Delete a template
-   * @param {string} id - Template ID
-   * @returns {Promise<boolean>} True if deleted successfully
+   * @param id - Template ID
+   * @returns True if deleted successfully
    */
-  async delete(id) {
+  async delete(id: string): Promise<boolean> {
     const templates = await this.getAll()
     const filteredTemplates = templates.filter(t => t.id !== id)
 
@@ -99,7 +100,7 @@ class LocalStorageTemplateRepository extends ITemplateRepository {
    * Save templates to localStorage
    * @private
    */
-  _save(templates) {
+  private _save(templates: Template[]): void {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(templates))
     } catch (error) {
@@ -112,7 +113,7 @@ class LocalStorageTemplateRepository extends ITemplateRepository {
    * Generate a unique ID using UUID v4
    * @private
    */
-  _generateId() {
+  private _generateId(): string {
     return uuidv4()
   }
 }

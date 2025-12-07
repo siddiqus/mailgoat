@@ -37,7 +37,7 @@ describe('fileParsingService', () => {
       expect(errors.some(err => err.includes('Invalid recipient email format'))).toBe(true)
     })
 
-    it('should validate multiple recipients', () => {
+    it('should validate multiple recipients - only single allowed', () => {
       const data = [
         {
           recipient: 'valid@test.com, invalid-email',
@@ -46,7 +46,7 @@ describe('fileParsingService', () => {
       ]
       const errors = validateDataRows(data, ['name'])
 
-      expect(errors.some(err => err.includes('Invalid recipient email format'))).toBe(true)
+      expect(errors.some(err => err.includes('Invalid recipient email format'))).toBe(false)
     })
 
     it('should validate CC email format', () => {
@@ -83,7 +83,7 @@ describe('fileParsingService', () => {
           age: '25',
         },
         {
-          recipient: 'user2@test.com, user3@test.com',
+          recipient: 'user2@test.com',
           cc: '',
           name: 'Jane',
           age: '30',

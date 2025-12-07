@@ -1,10 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
+import { Settings } from '../types/models'
 
 const settingsRepository = new LocalStorageSettingsRepository()
 
-let supabaseClient = null
-let currentConfig = null
+let supabaseClient: SupabaseClient | null = null
+let currentConfig: Settings['supabase'] | null = null
 
 /**
  * Get or create a Supabase client instance
@@ -50,14 +51,19 @@ export function resetSupabaseClient() {
   currentConfig = null
 }
 
+interface EmailInteractionFilters {
+  campaign_id?: string
+  template_id?: string
+}
+
 /**
  * Get email interactions with optional filters for campaign_id and template_id
- * @param {Object} filters - Optional filters
- * @param {string} [filters.campaign_id] - Filter by campaign ID
- * @param {string} [filters.template_id] - Filter by template ID
- * @returns {Promise<Array>} Array of email interactions
+ * @param filters - Optional filters
+ * @param filters.campaign_id - Filter by campaign ID
+ * @param filters.template_id - Filter by template ID
+ * @returns Array of email interactions
  */
-export async function getEmailInteractions(filters = {}) {
+export async function getEmailInteractions(filters: EmailInteractionFilters = {}) {
   const client = await getSupabaseClient()
 
   let query = client.from('email_interactions').select('*')

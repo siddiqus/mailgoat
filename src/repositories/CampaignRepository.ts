@@ -1,18 +1,21 @@
 import { v4 as uuidv4 } from 'uuid'
+import type { Campaign, CampaignCreateData } from '../types/models'
 
 /**
  * LocalStorage repository for campaigns
  */
 class CampaignRepository {
+  private storageKey: string
+
   constructor() {
     this.storageKey = 'MailGoat_campaigns'
   }
 
   /**
    * Get all campaigns
-   * @returns {Promise<Array>} Array of campaign objects
+   * @returns Array of campaign objects
    */
-  async getAll() {
+  async getAll(): Promise<Campaign[]> {
     try {
       const data = localStorage.getItem(this.storageKey)
       return data ? JSON.parse(data) : []
@@ -24,20 +27,20 @@ class CampaignRepository {
 
   /**
    * Get a single campaign by ID
-   * @param {string} id - Campaign ID
-   * @returns {Promise<Object|null>} Campaign object or null
+   * @param id - Campaign ID
+   * @returns Campaign object or null
    */
-  async getById(id) {
+  async getById(id: string): Promise<Campaign | null> {
     const campaigns = await this.getAll()
     return campaigns.find(c => c.id === id) || null
   }
 
   /**
    * Create a new campaign
-   * @param {Object} campaignData - Campaign data (name, color)
-   * @returns {Promise<Object>} Created campaign
+   * @param campaignData - Campaign data (name, color)
+   * @returns Created campaign
    */
-  async create(campaignData) {
+  async create(campaignData: CampaignCreateData): Promise<Campaign> {
     const campaigns = await this.getAll()
     const newCampaign = {
       id: uuidv4(),
@@ -53,11 +56,14 @@ class CampaignRepository {
 
   /**
    * Update a campaign
-   * @param {string} id - Campaign ID
-   * @param {Object} updates - Fields to update
-   * @returns {Promise<Object|null>} Updated campaign or null
+   * @param id - Campaign ID
+   * @param updates - Fields to update
+   * @returns Updated campaign or null
    */
-  async update(id, updates) {
+  async update(
+    id: string,
+    updates: Partial<Omit<Campaign, 'id' | 'createdAt'>>
+  ): Promise<Campaign | null> {
     const campaigns = await this.getAll()
     const index = campaigns.findIndex(c => c.id === id)
 
@@ -78,10 +84,10 @@ class CampaignRepository {
 
   /**
    * Delete a campaign
-   * @param {string} id - Campaign ID
-   * @returns {Promise<boolean>} True if deleted successfully
+   * @param id - Campaign ID
+   * @returns True if deleted successfully
    */
-  async delete(id) {
+  async delete(id: string): Promise<boolean> {
     const campaigns = await this.getAll()
     const filteredCampaigns = campaigns.filter(c => c.id !== id)
 
@@ -95,10 +101,10 @@ class CampaignRepository {
 
   /**
    * Increment email count for a campaign
-   * @param {string} id - Campaign ID
-   * @returns {Promise<boolean>} True if incremented successfully
+   * @param id - Campaign ID
+   * @returns True if incremented successfully
    */
-  async incrementEmailCount(id) {
+  async incrementEmailCount(id: string): Promise<boolean> {
     const campaigns = await this.getAll()
     const index = campaigns.findIndex(c => c.id === id)
 
@@ -115,7 +121,7 @@ class CampaignRepository {
    * Save campaigns to localStorage
    * @private
    */
-  _save(campaigns) {
+  private _save(campaigns: Campaign[]): void {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(campaigns))
     } catch (error) {
