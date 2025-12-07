@@ -14,9 +14,12 @@ export interface CampaignCreateData {
 }
 
 // Template types
+export type TemplateType = 'email' | 'calendar'
+
 export interface Template {
   id: string
   name: string
+  type: TemplateType
   subject?: string
   htmlString: string
   parameters?: string[]
@@ -26,6 +29,7 @@ export interface Template {
 
 export interface TemplateCreateData {
   name: string
+  type: TemplateType
   subject?: string
   htmlString: string
   parameters?: string[]
@@ -56,6 +60,24 @@ export interface EmailData {
   htmlBody?: string
   htmlString?: string
   campaignId?: string | null
+}
+
+// Calendar Invite History types
+export interface CalendarInviteHistoryRecord {
+  id: string
+  templateName: string
+  templateId: string
+  template: Template
+  recipient: string
+  subject: string
+  message: string
+  startTime: string
+  endTime: string
+  timezone: string
+  attachmentName?: string
+  status: 'sent' | 'failed'
+  sentAt?: string
+  createdAt?: string
 }
 
 // Analytics types

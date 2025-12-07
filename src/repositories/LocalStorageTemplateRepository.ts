@@ -18,7 +18,14 @@ class LocalStorageTemplateRepository {
   async getAll(): Promise<Template[]> {
     try {
       const data = localStorage.getItem(this.storageKey)
-      return data ? JSON.parse(data) : []
+      if (!data) return []
+
+      const templates = JSON.parse(data)
+      // Ensure backward compatibility: default type to 'email' for existing templates
+      return templates.map((template: Template) => ({
+        ...template,
+        type: template.type || 'email',
+      }))
     } catch (error) {
       console.error('Error reading templates from localStorage:', error)
       return []
@@ -32,7 +39,9 @@ class LocalStorageTemplateRepository {
    */
   async getById(id: string): Promise<Template | null> {
     const templates = await this.getAll()
-    return templates.find(t => t.id === id) || null
+    const template = templates.find(t => t.id === id) || null
+    // Backward compatibility is already handled by getAll()
+    return template
   }
 
   /**
@@ -115,6 +124,39 @@ class LocalStorageTemplateRepository {
    */
   private _generateId(): string {
     return uuidv4()
+  }
+
+  /**
+   * Migrate old templates to add missing type field
+   * This ensures backward compatibility with templates created before the type field was added
+   */
+  async migrateTemplates(): Promise<void> {
+    try {
+      const data = localStorage.getItem(this.storageKey)
+      if (!data) return
+
+      const templates = JSON.parse(data)
+      let needsMigration = false
+
+      const migratedTemplates = templates.map((template: Template) => {
+        if (!template.type) {
+          needsMigration = true
+          return {
+            ...template,
+            type: 'email',
+          }
+        }
+        return template
+      })
+
+      // Only save if we actually migrated something
+      if (needsMigration) {
+        this._save(migratedTemplates)
+        console.log('Successfully migrated templates to include type field')
+      }
+    } catch (error) {
+      console.error('Error migrating templates:', error)
+    }
   }
 }
 

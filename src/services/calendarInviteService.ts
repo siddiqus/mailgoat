@@ -58,7 +58,7 @@ export async function sendCalendarInvite(
     requestWithAttachment.attachment = attachment.fileBase64
   }
 
-  await axios.post(settings.calendarWebhook?.url, calendarInviteBody, {
+  await axios.post(settings.calendarWebhook?.url, requestWithAttachment, {
     headers,
   })
 }

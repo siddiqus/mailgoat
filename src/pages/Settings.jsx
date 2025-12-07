@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAlert } from '../contexts/AlertContext'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
+import { sendCalendarInvite } from '../services/calendarInviteService'
 import { testWebhook } from '../services/emailService'
+import CalendarWebhookTab from './Settings/CalendarWebhookTab'
 import ImportExportTab from './Settings/ImportExportTab'
 import OthersTab from './Settings/OthersTab'
 import SupabaseTab from './Settings/SupabaseTab'
@@ -30,6 +32,10 @@ function Settings() {
   // Supabase settings
   const [supabaseUrl, setSupabaseUrl] = useState('')
   const [supabaseKey, setSupabaseKey] = useState('')
+
+  // Calendar webhook settings
+  const [calendarWebhookUrl, setCalendarWebhookUrl] = useState('')
+  const [calendarWebhookHeaders, setCalendarWebhookHeaders] = useState([])
 
   // Other settings
   const [pixelTrackingEnabled, setPixelTrackingEnabled] = useState(true)
@@ -60,6 +66,10 @@ function Settings() {
       // Load Supabase settings
       setSupabaseUrl(data.supabase?.url || '')
       setSupabaseKey(data.supabase?.key || '')
+
+      // Load calendar webhook settings
+      setCalendarWebhookUrl(data.calendarWebhook?.url || '')
+      setCalendarWebhookHeaders(data.calendarWebhook?.headers || [])
 
       // Load other settings
       setPixelTrackingEnabled(data.pixelTracking?.enabled ?? true)
@@ -95,6 +105,21 @@ function Settings() {
       ...bodyMapping,
       [field]: value,
     })
+  }
+
+  const handleAddCalendarHeader = () => {
+    setCalendarWebhookHeaders([...calendarWebhookHeaders, { key: '', value: '' }])
+  }
+
+  const handleRemoveCalendarHeader = index => {
+    const newHeaders = calendarWebhookHeaders.filter((_, i) => i !== index)
+    setCalendarWebhookHeaders(newHeaders)
+  }
+
+  const handleCalendarHeaderChange = (index, field, value) => {
+    const newHeaders = [...calendarWebhookHeaders]
+    newHeaders[index][field] = value
+    setCalendarWebhookHeaders(newHeaders)
   }
 
   const handleSave = async () => {
@@ -206,6 +231,55 @@ function Settings() {
       } finally {
         setSaving(false)
       }
+    } else if (activeTab === 'calendar-webhook') {
+      // Validate calendar webhook URL
+      if (!calendarWebhookUrl.trim()) {
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please enter a calendar webhook URL',
+          type: 'warning',
+        })
+        return
+      }
+
+      try {
+        new URL(calendarWebhookUrl)
+      } catch (error) {
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please enter a valid URL',
+          type: 'warning',
+        })
+        return
+      }
+
+      setSaving(true)
+      try {
+        const updatedSettings = {
+          ...settings,
+          calendarWebhook: {
+            url: calendarWebhookUrl,
+            headers: calendarWebhookHeaders.filter(h => h.key.trim() !== ''),
+          },
+        }
+
+        await settingsRepository.saveSettings(updatedSettings)
+        setSettings(updatedSettings)
+        showAlert({
+          title: 'Success',
+          message: 'Calendar webhook settings saved successfully!',
+          type: 'success',
+        })
+      } catch (error) {
+        console.error('Error saving settings:', error)
+        showAlert({
+          title: 'Error',
+          message: 'Failed to save settings',
+          type: 'danger',
+        })
+      } finally {
+        setSaving(false)
+      }
     } else if (activeTab === 'others') {
       setSaving(true)
       try {
@@ -268,6 +342,53 @@ function Settings() {
       showAlert({
         title: 'Error',
         message: `Failed to test webhook: ${error.message}`,
+        type: 'danger',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleTestCalendarWebhook = async () => {
+    if (!calendarWebhookUrl.trim()) {
+      showAlert({
+        title: 'Validation Error',
+        message: 'Please enter a calendar webhook URL first',
+        type: 'warning',
+      })
+      return
+    }
+
+    setSaving(true)
+    try {
+      const testSettings = {
+        calendarWebhook: {
+          url: calendarWebhookUrl,
+          headers: calendarWebhookHeaders.filter(h => h.key.trim() !== ''),
+        },
+      }
+
+      const testBody = {
+        subject: 'Test Calendar Invite',
+        to: 'test@example.com',
+        message: '<p>This is a test calendar invite from MailGoat.</p>',
+        startTime: new Date().toISOString(),
+        endTime: new Date(Date.now() + 3600000).toISOString(), // 1 hour later
+        timezone: 'Eastern Standard Time',
+      }
+
+      await sendCalendarInvite(testSettings, testBody)
+
+      showAlert({
+        title: 'Success',
+        message: 'Test calendar webhook sent successfully! Check your webhook endpoint.',
+        type: 'success',
+      })
+    } catch (error) {
+      console.error('Error testing calendar webhook:', error)
+      showAlert({
+        title: 'Error',
+        message: `Failed to test calendar webhook: ${error.message}`,
         type: 'danger',
       })
     } finally {
@@ -366,6 +487,12 @@ function Settings() {
             url: importedData.supabase?.url || '',
             key: importedData.supabase?.key || '',
           },
+          calendarWebhook: {
+            url: importedData.calendarWebhook?.url || '',
+            headers: Array.isArray(importedData.calendarWebhook?.headers)
+              ? importedData.calendarWebhook.headers
+              : [],
+          },
           pixelTracking: {
             enabled: importedData.pixelTracking?.enabled ?? true,
           },
@@ -446,6 +573,12 @@ function Settings() {
             Supabase Integration
           </button>
           <button
+            className={`settings-tab-button ${activeTab === 'calendar-webhook' ? 'active' : ''}`}
+            onClick={() => setActiveTab('calendar-webhook')}
+          >
+            Calendar Webhook
+          </button>
+          <button
             className={`settings-tab-button ${activeTab === 'import-export' ? 'active' : ''}`}
             onClick={() => setActiveTab('import-export')}
           >
@@ -486,6 +619,21 @@ function Settings() {
               setSupabaseKey={setSupabaseKey}
               saving={saving}
               handleSave={handleSave}
+            />
+          )}
+
+          {/* Calendar Webhook Tab */}
+          {activeTab === 'calendar-webhook' && (
+            <CalendarWebhookTab
+              calendarWebhookUrl={calendarWebhookUrl}
+              setCalendarWebhookUrl={setCalendarWebhookUrl}
+              calendarWebhookHeaders={calendarWebhookHeaders}
+              saving={saving}
+              handleAddCalendarHeader={handleAddCalendarHeader}
+              handleRemoveCalendarHeader={handleRemoveCalendarHeader}
+              handleCalendarHeaderChange={handleCalendarHeaderChange}
+              handleSave={handleSave}
+              handleTestCalendarWebhook={handleTestCalendarWebhook}
             />
           )}
 

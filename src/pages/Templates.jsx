@@ -21,6 +21,7 @@ function Templates() {
   const [editingTemplate, setEditingTemplate] = useState(null)
   const [viewingTemplate, setViewingTemplate] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [filterType, setFilterType] = useState('all') // 'all', 'email', 'calendar'
   const fileInputRef = useRef(null)
 
   // Load templates on component mount
@@ -204,6 +205,11 @@ function Templates() {
     return date.toLocaleDateString()
   }
 
+  const filteredTemplates = templates.filter(template => {
+    if (filterType === 'all') return true
+    return template.type === filterType
+  })
+
   if (loading) {
     return (
       <PageContainer>
@@ -237,6 +243,33 @@ function Templates() {
         </div>
       </div>
 
+      {/* Filter buttons */}
+      <div className="mb-3">
+        <div className="btn-group" role="group">
+          <button
+            type="button"
+            className={`btn ${filterType === 'all' ? 'btn-primary' : 'btn-outline-primary'}`}
+            onClick={() => setFilterType('all')}
+          >
+            All ({templates.length})
+          </button>
+          <button
+            type="button"
+            className={`btn ${filterType === 'email' ? 'btn-primary' : 'btn-outline-primary'}`}
+            onClick={() => setFilterType('email')}
+          >
+            Email ({templates.filter(t => t.type === 'email').length})
+          </button>
+          <button
+            type="button"
+            className={`btn ${filterType === 'calendar' ? 'btn-primary' : 'btn-outline-primary'}`}
+            onClick={() => setFilterType('calendar')}
+          >
+            Calendar ({templates.filter(t => t.type === 'calendar').length})
+          </button>
+        </div>
+      </div>
+
       {/* Hidden file input for import */}
       <input
         ref={fileInputRef}
@@ -248,7 +281,7 @@ function Templates() {
 
       {/* Templates List */}
       <PageCard className="p-0">
-        {templates.length === 0 ? (
+        {filteredTemplates.length === 0 ? (
           <div className="text-center py-5 text-muted">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -261,23 +294,35 @@ function Templates() {
               <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z" />
               <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z" />
             </svg>
-            <p className="mb-0">No templates yet. Create your first template above!</p>
+            <p className="mb-0">
+              {templates.length === 0
+                ? 'No templates yet. Create your first template above!'
+                : `No ${filterType} templates found.`}
+            </p>
           </div>
         ) : (
           <div className="table-responsive">
             <table className="table table-hover mb-0">
               <thead>
                 <tr>
-                  <th style={{ width: '30%' }}>Template Name</th>
-                  <th style={{ width: '35%' }}>Subject</th>
+                  <th style={{ width: '25%' }}>Template Name</th>
+                  <th style={{ width: '10%' }}>Type</th>
+                  <th style={{ width: '30%' }}>Subject</th>
                   <th style={{ width: '15%' }}>Created</th>
                   <th style={{ width: '20%' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {templates.map(template => (
+                {filteredTemplates.map(template => (
                   <tr key={template.id}>
                     <td className="align-middle">{template.name || 'Untitled Template'}</td>
+                    <td className="align-middle">
+                      <span
+                        className={`badge ${template.type === 'email' ? 'bg-primary' : 'bg-success'}`}
+                      >
+                        {template.type === 'email' ? 'Email' : 'Calendar'}
+                      </span>
+                    </td>
                     <td className="align-middle">
                       <span className="text-muted">{template.subject}</span>
                     </td>

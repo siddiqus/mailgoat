@@ -5,6 +5,7 @@ import HomePage from './components/HomePage'
 import Sidebar from './components/Sidebar'
 import { AlertProvider } from './contexts/AlertContext'
 import Analytics from './pages/Analytics'
+import CalendarInvites from './pages/CalendarInvites'
 import Campaigns from './pages/Campaigns'
 import History from './pages/History'
 import SendEmail from './pages/SendEmail'
@@ -25,6 +26,7 @@ function App() {
                   <Route path="/templates" element={<Templates />} />
                   <Route path="/campaigns" element={<Campaigns />} />
                   <Route path="/send-email" element={<SendEmail />} />
+                  <Route path="/calendar-invites" element={<CalendarInvites />} />
                   <Route path="/history" element={<History />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/settings" element={<Settings />} />

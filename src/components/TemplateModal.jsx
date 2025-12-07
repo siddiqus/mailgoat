@@ -3,8 +3,11 @@ import { sanitizeHtml } from '../utils/sanitizer'
 import { validateHTML, extractParameters } from '../utils/templateValidator'
 import RichTextEditor from './RichTextEditor'
 
+const CALENDAR_PREDEFINED_PARAMS = ['startTime', 'timezone', 'durationInMinutes']
+
 function TemplateModal({ show, onHide, onSave, template = null }) {
   const [name, setName] = useState('')
+  const [type, setType] = useState('email')
   const [subject, setSubject] = useState('')
   const [htmlString, setHtmlString] = useState('')
   const [parameters, setParameters] = useState([])
@@ -20,11 +23,13 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
       if (template) {
         // Edit mode
         setName(template.name || '')
+        setType(template.type || 'email')
         setSubject(template.subject || '')
         setHtmlString(template.htmlString || '')
       } else {
         // Create mode
         setName('')
+        setType('email')
         setSubject('')
         setHtmlString('')
       }
@@ -37,10 +42,11 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     }
   }, [show, template])
 
-  // Validate and extract parameters whenever HTML string or subject changes
+  // Validate and extract parameters whenever HTML string, subject, or type changes
   useEffect(() => {
     if (htmlString.trim() === '' && subject.trim() === '') {
-      setParameters([])
+      // For calendar templates, always include predefined parameters
+      setParameters(type === 'calendar' ? [...CALENDAR_PREDEFINED_PARAMS] : [])
       setValidationErrors([])
       setIsValid(true)
       return
@@ -54,9 +60,16 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
     // Extract parameters from both subject and HTML
     const htmlParams = extractParameters(htmlString)
     const subjectParams = extractParameters(subject)
-    const allParams = [...new Set([...subjectParams, ...htmlParams])]
-    setParameters(allParams)
-  }, [htmlString, subject])
+    const extractedParams = [...new Set([...subjectParams, ...htmlParams])]
+
+    // For calendar templates, always include predefined parameters
+    if (type === 'calendar') {
+      const allParams = [...new Set([...CALENDAR_PREDEFINED_PARAMS, ...extractedParams])]
+      setParameters(allParams)
+    } else {
+      setParameters(extractedParams)
+    }
+  }, [htmlString, subject, type])
 
   const validateName = nameValue => {
     const trimmedName = nameValue.trim()
@@ -118,6 +131,7 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
 
     const templateData = {
       name: name.trim(),
+      type,
       subject: subject.trim(),
       htmlString: htmlString,
       parameters,
@@ -166,6 +180,31 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
                 placeholder="Enter a descriptive name for your template"
               />
               {nameError && <div className="invalid-feedback d-block">{nameError}</div>}
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="templateType" className="form-label">
+                Template Type <span className="text-danger">*</span>
+              </label>
+              <select
+                id="templateType"
+                className="form-select"
+                value={type}
+                onChange={e => setType(e.target.value)}
+                disabled={!!template}
+              >
+                <option value="email">Email</option>
+                <option value="calendar">Calendar Invite</option>
+              </select>
+              {template && (
+                <div className="form-text">Template type cannot be changed after creation</div>
+              )}
+              {!template && type === 'calendar' && (
+                <div className="form-text text-info">
+                  Calendar templates will automatically include parameters: startTime, timezone,
+                  durationInMinutes
+                </div>
+              )}
             </div>
 
             <div className="mb-3">
@@ -257,18 +296,29 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
 
             {parameters.length > 0 && (
               <div className="mb-3">
-                <label className="form-label">Detected Parameters</label>
+                <label className="form-label">Parameters</label>
                 <div className="border rounded p-3 bg-light">
                   <div className="d-flex flex-wrap gap-2">
-                    {parameters.map((param, index) => (
-                      <span key={index} className="badge bg-secondary fs-6">
-                        {param}
-                      </span>
-                    ))}
+                    {parameters.map((param, index) => {
+                      const isPredefined =
+                        type === 'calendar' && CALENDAR_PREDEFINED_PARAMS.includes(param)
+                      return (
+                        <span
+                          key={index}
+                          className={`badge fs-6 ${isPredefined ? 'bg-success' : 'bg-secondary'}`}
+                          title={isPredefined ? 'Predefined calendar parameter' : ''}
+                        >
+                          {param}
+                          {isPredefined && ' ✓'}
+                        </span>
+                      )
+                    })}
                   </div>
                 </div>
                 <div className="form-text">
-                  These parameters were automatically detected from your HTML template
+                  {type === 'calendar'
+                    ? 'Green badges are predefined calendar parameters. Others are automatically detected from your template.'
+                    : 'These parameters were automatically detected from your template'}
                 </div>
               </div>
             )}

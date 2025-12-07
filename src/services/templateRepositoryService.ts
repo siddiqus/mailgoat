@@ -3,6 +3,12 @@ import type { Template, TemplateCreateData, ImportResult } from '../types/models
 
 const templateRepository = new LocalStorageTemplateRepository()
 
+// Run migration on module load to ensure backward compatibility
+// This adds the 'type' field to existing templates, defaulting to 'email'
+templateRepository.migrateTemplates().catch(error => {
+  console.error('Failed to migrate templates:', error)
+})
+
 /**
  * Get all templates
  * @returns Array of templates
@@ -130,6 +136,7 @@ export const importTemplates = async (
       const t = template as Partial<Template>
       await templateRepository.create({
         name: t.name!,
+        type: t.type || 'email', // Default to 'email' for backwards compatibility
         subject: t.subject || '',
         htmlString: t.htmlString!,
         parameters: t.parameters || [],
