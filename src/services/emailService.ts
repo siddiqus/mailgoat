@@ -66,7 +66,7 @@ const addTrackingPixel = ({
     supabaseUrl,
   })
 
-  const trackingPixel = `\n<img src="${trackingPixelUrl}" width="10" height="10" style="display:none;"/>`
+  const trackingPixel = `\n<img src="${trackingPixelUrl}" width="1" height="1" style="display:none;"/>`
   return htmlBody + trackingPixel
 }
 
