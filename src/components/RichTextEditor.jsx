@@ -1,14 +1,18 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Color } from '@tiptap/extension-color'
-import Image from '@tiptap/extension-image'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Underline } from '@tiptap/extension-underline'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import ResizableImageExtension from 'tiptap-extension-resize-image'
 import './RichTextEditor.css'
 
 function RichTextEditor({ value, onChange, placeholder }) {
+  const fileInputRef = useRef(null)
+  const [showUrlInput, setShowUrlInput] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -18,19 +22,42 @@ function RichTextEditor({ value, onChange, placeholder }) {
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
-      Image.configure({
+      ResizableImageExtension.configure({
         inline: true,
-        resize: {
-          enabled: true,
-          directions: ['top', 'bottom', 'left', 'right'],
-          alwaysPreserveAspectRatio: true,
-        },
+        allowBase64: true,
       }),
     ],
     content: value || '',
     onUpdate: ({ editor }) => {
       const html = editor.getHTML()
       onChange(html)
+    },
+    editorProps: {
+      handlePaste: (view, event) => {
+        const items = Array.from(event.clipboardData?.items || [])
+
+        for (const item of items) {
+          if (item.type.indexOf('image') === 0) {
+            event.preventDefault()
+            const file = item.getAsFile()
+
+            if (file) {
+              const reader = new FileReader()
+              reader.onload = e => {
+                const base64 = e.target?.result
+                if (base64 && editor) {
+                  editor.chain().focus().setImage({ src: base64 }).run()
+                }
+              }
+              reader.readAsDataURL(file)
+            }
+
+            return true
+          }
+        }
+
+        return false
+      },
     },
   })
 
@@ -40,6 +67,45 @@ function RichTextEditor({ value, onChange, placeholder }) {
       editor.commands.setContent(value || '')
     }
   }, [value, editor])
+
+  const handleImageUpload = event => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = e => {
+      const base64 = e.target?.result
+      if (base64 && editor) {
+        editor.chain().focus().setImage({ src: base64 }).run()
+      }
+    }
+    reader.readAsDataURL(file)
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleImageUrl = () => {
+    if (imageUrl.trim() && editor) {
+      editor.chain().focus().setImage({ src: imageUrl.trim() }).run()
+      setImageUrl('')
+      setShowUrlInput(false)
+    }
+  }
 
   if (!editor) {
     return null
@@ -222,7 +288,60 @@ function RichTextEditor({ value, onChange, placeholder }) {
             className="color-picker"
           />
         </div>
+
+        <div className="toolbar-divider"></div>
+
+        <div className="toolbar-group">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            style={{ display: 'none' }}
+          />
+          <button type="button" onClick={() => fileInputRef.current?.click()} title="Upload Image">
+            🖼️
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowUrlInput(!showUrlInput)}
+            className={showUrlInput ? 'is-active' : ''}
+            title="Image from URL"
+          >
+            🔗
+          </button>
+        </div>
       </div>
+
+      {showUrlInput && (
+        <div className="image-url-input" style={{ padding: '8px', borderBottom: '1px solid #ddd' }}>
+          <input
+            type="text"
+            value={imageUrl}
+            onChange={e => setImageUrl(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleImageUrl()}
+            placeholder="Enter image URL..."
+            style={{ width: '70%', padding: '4px 8px', marginRight: '8px' }}
+          />
+          <button
+            type="button"
+            onClick={handleImageUrl}
+            style={{ padding: '4px 12px', marginRight: '4px' }}
+          >
+            Insert
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowUrlInput(false)
+              setImageUrl('')
+            }}
+            style={{ padding: '4px 12px' }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       <EditorContent editor={editor} className="editor-content" placeholder={placeholder} />
 
