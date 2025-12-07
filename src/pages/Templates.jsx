@@ -1,24 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
-import TemplateModal from '../components/TemplateModal'
 import TemplateViewModal from '../components/TemplateViewModal'
 import { useAlert } from '../contexts/AlertContext'
 import {
   getAllTemplates,
-  createTemplate,
-  updateTemplate,
   deleteTemplate,
   exportTemplates,
   importTemplates,
 } from '../services/templateRepositoryService'
 
 function Templates() {
+  const navigate = useNavigate()
   const { showAlert, showConfirm } = useAlert()
   const [templates, setTemplates] = useState([])
-  const [showModal, setShowModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
-  const [editingTemplate, setEditingTemplate] = useState(null)
   const [viewingTemplate, setViewingTemplate] = useState(null)
   const [loading, setLoading] = useState(true)
   const [filterType, setFilterType] = useState('all') // 'all', 'email', 'calendar'
@@ -47,8 +44,7 @@ function Templates() {
   }
 
   const handleCreateClick = () => {
-    setEditingTemplate(null)
-    setShowModal(true)
+    navigate('/templates/new')
   }
 
   const handleViewClick = template => {
@@ -57,8 +53,7 @@ function Templates() {
   }
 
   const handleEditClick = template => {
-    setEditingTemplate(template)
-    setShowModal(true)
+    navigate(`/templates/edit/${template.id}`)
   }
 
   const handleDeleteClick = async id => {
@@ -88,48 +83,6 @@ function Templates() {
         type: 'danger',
       })
     }
-  }
-
-  const handleSave = async templateData => {
-    try {
-      // Check for duplicate template name
-      const isDuplicate = templates.some(
-        t =>
-          t.name.toLowerCase() === templateData.name.toLowerCase() && t.id !== editingTemplate?.id
-      )
-
-      if (isDuplicate) {
-        showAlert({
-          title: 'Duplicate Name',
-          message: `A template with the name "${templateData.name}" already exists. Please choose a different name.`,
-          type: 'warning',
-        })
-        return
-      }
-
-      if (editingTemplate) {
-        // Update existing template
-        await updateTemplate(editingTemplate.id, templateData)
-      } else {
-        // Create new template
-        await createTemplate(templateData)
-      }
-      await loadTemplates()
-      setShowModal(false)
-      setEditingTemplate(null)
-    } catch (error) {
-      console.error('Error saving template:', error)
-      showAlert({
-        title: 'Error',
-        message: 'Failed to save template',
-        type: 'danger',
-      })
-    }
-  }
-
-  const handleModalClose = () => {
-    setShowModal(false)
-    setEditingTemplate(null)
   }
 
   const handleViewModalClose = () => {
@@ -361,14 +314,6 @@ function Templates() {
           </div>
         )}
       </PageCard>
-
-      {/* Create/Edit Modal */}
-      <TemplateModal
-        show={showModal}
-        onHide={handleModalClose}
-        onSave={handleSave}
-        template={editingTemplate}
-      />
 
       {/* View Modal */}
       <TemplateViewModal

@@ -10,6 +10,7 @@ import Campaigns from './pages/Campaigns'
 import History from './pages/History'
 import SendEmail from './pages/SendEmail'
 import Settings from './pages/Settings'
+import TemplateEditor from './pages/TemplateEditor'
 import Templates from './pages/Templates'
 
 function App() {
@@ -24,6 +25,8 @@ function App() {
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/templates" element={<Templates />} />
+                  <Route path="/templates/new" element={<TemplateEditor />} />
+                  <Route path="/templates/edit/:id" element={<TemplateEditor />} />
                   <Route path="/campaigns" element={<Campaigns />} />
                   <Route path="/send-email" element={<SendEmail />} />
                   <Route path="/calendar-invites" element={<CalendarInvites />} />
