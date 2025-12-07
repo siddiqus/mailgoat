@@ -140,6 +140,6 @@ export interface Settings {
   }
   calendarWebhook?: {
     url: string
-    headers: WebhookHeader[]
+    headers?: WebhookHeader[]
   }
 }
