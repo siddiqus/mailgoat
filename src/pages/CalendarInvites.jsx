@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
 import SearchableSelect from '../components/SearchableSelect'
+import TimePickerInput from '../components/TimePickerInput'
 import { useAlert } from '../contexts/AlertContext'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { saveCalendarInviteToHistory } from '../services/calendarInviteHistoryService'
@@ -30,7 +31,7 @@ function CalendarInvites() {
   const [recipient, setRecipient] = useState('')
   const [subject, setSubject] = useState('')
   const [date, setDate] = useState('')
-  const [time12h, setTime12h] = useState('')
+  const [time12h, setTime12h] = useState('02:00 PM')
   const [timezone, setTimezone] = useState(getBrowserTimezone())
   const [durationInMinutes, setDurationInMinutes] = useState('60')
   const [parameterValues, setParameterValues] = useState({})
@@ -347,7 +348,7 @@ function CalendarInvites() {
       setRecipient('')
       setSubject('')
       setDate('')
-      setTime12h('')
+      setTime12h('02:00 PM')
       setDurationInMinutes('60')
       setParameterValues({})
       setAttachmentFile(null)
@@ -470,14 +471,7 @@ function CalendarInvites() {
                     <label className="form-label">
                       Start Time <span className="text-danger">*</span>
                     </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={time12h}
-                      onChange={e => setTime12h(e.target.value)}
-                      placeholder="02:00 PM"
-                    />
-                    <div className="form-text">Format: HH:MM AM/PM (e.g., 02:00 PM)</div>
+                    <TimePickerInput value={time12h} onChange={setTime12h} />
                   </div>
 
                   <div className="mb-3">
