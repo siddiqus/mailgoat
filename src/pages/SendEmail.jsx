@@ -782,10 +782,12 @@ function SendEmail() {
                 <div className="mt-3 small text-muted">
                   <strong>Accepted formats:</strong> CSV (.csv), Excel (.xlsx, .xls)
                   <br />
-                  <strong>Required columns:</strong> recipient, cc
+                  <strong>Required columns:</strong> recipient
                   {bulkTemplate.parameters && bulkTemplate.parameters.length > 0 && (
                     <>, {bulkTemplate.parameters.join(', ')}</>
                   )}
+                  <br />
+                  <strong>Optional columns:</strong> cc
                 </div>
               </PageCard>
             )}

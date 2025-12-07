@@ -43,12 +43,12 @@ export const prepareEmailFromTemplate = (
  * @returns CSV content
  */
 export const generateSampleCSV = (template: Template): string => {
-  const requiredColumns = ['recipient', 'cc', ...(template.parameters || [])]
-  const headers = requiredColumns.join(',')
-  const sampleRow = requiredColumns
+  const columns = ['recipient', 'cc', ...(template.parameters || [])]
+  const headers = columns.join(',')
+  const sampleRow = columns
     .map(col => {
       if (col === 'recipient') return 'user@example.com'
-      if (col === 'cc') return 'cc@example.com (optional)'
+      if (col === 'cc') return '' // CC is optional, leave empty
       return `sample_${col}`
     })
     .join(',')

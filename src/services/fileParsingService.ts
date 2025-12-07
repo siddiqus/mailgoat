@@ -54,8 +54,8 @@ export const validateDataRows = (data: DataRow[], templateParams: string[]): str
       }
     }
 
-    // Validate CC if provided (can also have multiple emails)
-    if (row.cc && row.cc.trim() !== '') {
+    // Validate CC if provided (optional field)
+    if (row.cc !== undefined && row.cc !== null && row.cc.trim() !== '') {
       const ccEmails = parseEmailList(row.cc)
 
       ccEmails.forEach(email => {
