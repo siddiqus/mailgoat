@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
 import SearchableSelect from '../components/SearchableSelect'
@@ -10,7 +10,13 @@ import { getAllTemplates } from '../services/templateRepositoryService'
 import { prepareEmailFromTemplate } from '../services/templateService'
 import { parseEmailList, validateEmailList } from '../utils/emailUtils'
 import { sanitizeHtml } from '../utils/sanitizer'
-import { calculateEndTime } from '../utils/timeUtils'
+import {
+  calculateEndTime,
+  formatLongDate,
+  format12HourTime,
+  combineDateAndTime,
+  parse12HourTimeTo24Hour,
+} from '../utils/timeUtils'
 import { getBrowserTimezone, getTimezoneOptions } from '../utils/timezoneUtils'
 
 const settingsRepository = new LocalStorageSettingsRepository()
@@ -23,7 +29,8 @@ function CalendarInvites() {
   // Calendar-specific fields
   const [recipient, setRecipient] = useState('')
   const [subject, setSubject] = useState('')
-  const [startTime, setStartTime] = useState('')
+  const [date, setDate] = useState('')
+  const [time12h, setTime12h] = useState('')
   const [timezone, setTimezone] = useState(getBrowserTimezone())
   const [durationInMinutes, setDurationInMinutes] = useState('60')
   const [parameterValues, setParameterValues] = useState({})
@@ -39,13 +46,7 @@ function CalendarInvites() {
   const [sending, setSending] = useState(false)
   const [webhookConfigured, setWebhookConfigured] = useState(false)
 
-  // Load templates and settings on mount
-  useEffect(() => {
-    loadTemplates()
-    loadSettings()
-  }, [])
-
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     setLoading(true)
     try {
       const data = await getAllTemplates()
@@ -62,9 +63,9 @@ function CalendarInvites() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showAlert])
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       const settings = await settingsRepository.getSettings()
       const isConfigured =
@@ -78,7 +79,17 @@ function CalendarInvites() {
       console.error('Error loading settings:', error)
       setWebhookConfigured(false)
     }
-  }
+  }, [])
+
+  // Load templates and settings on mount
+  useEffect(() => {
+    loadTemplates()
+    loadSettings()
+  }, [loadTemplates, loadSettings])
+
+  // Convert 12-hour time to 24-hour and combine with date
+  const time24h = parse12HourTimeTo24Hour(time12h)
+  const startTime = combineDateAndTime(date, time24h)
 
   // Calculate end time from start time and duration using utility function
   const endTime = calculateEndTime(startTime, durationInMinutes)
@@ -86,9 +97,12 @@ function CalendarInvites() {
   // Update preview when template or parameters change
   useEffect(() => {
     if (selectedTemplate) {
+      // Prepare formatted values for template substitution
       const allParams = {
         ...parameterValues,
-        startTime,
+        date: formatLongDate(startTime),
+        startTime: format12HourTime(startTime),
+        endTime: format12HourTime(endTime),
         timezone,
         durationInMinutes,
       }
@@ -102,7 +116,7 @@ function CalendarInvites() {
       setSubject('')
       setHtmlBody('')
     }
-  }, [selectedTemplate, parameterValues, startTime, timezone, durationInMinutes])
+  }, [selectedTemplate, parameterValues, startTime, endTime, timezone, durationInMinutes])
 
   const handleTemplateSelect = template => {
     setSelectedTemplate(template)
@@ -110,7 +124,7 @@ function CalendarInvites() {
     if (template.parameters) {
       template.parameters.forEach(param => {
         // Skip predefined calendar parameters
-        if (!['startTime', 'timezone', 'durationInMinutes'].includes(param)) {
+        if (!['date', 'startTime', 'endTime', 'timezone', 'durationInMinutes'].includes(param)) {
           initialValues[param] = ''
         }
       })
@@ -227,10 +241,29 @@ function CalendarInvites() {
       return
     }
 
-    if (!startTime) {
+    if (!date) {
       showAlert({
         title: 'Validation Error',
-        message: 'Please select a start time',
+        message: 'Please select a date',
+        type: 'warning',
+      })
+      return
+    }
+
+    if (!time12h) {
+      showAlert({
+        title: 'Validation Error',
+        message: 'Please enter a start time',
+        type: 'warning',
+      })
+      return
+    }
+
+    // Validate time format
+    if (!parse12HourTimeTo24Hour(time12h)) {
+      showAlert({
+        title: 'Validation Error',
+        message: 'Invalid time format. Please use HH:MM AM/PM (e.g., 02:00 PM)',
         type: 'warning',
       })
       return
@@ -313,7 +346,8 @@ function CalendarInvites() {
       setSelectedTemplate(null)
       setRecipient('')
       setSubject('')
-      setStartTime('')
+      setDate('')
+      setTime12h('')
       setDurationInMinutes('60')
       setParameterValues({})
       setAttachmentFile(null)
@@ -352,7 +386,7 @@ function CalendarInvites() {
   const otherParameters = useMemo(() => {
     if (!selectedTemplate?.parameters) return []
     return selectedTemplate.parameters.filter(
-      param => !['startTime', 'timezone', 'durationInMinutes'].includes(param)
+      param => !['date', 'startTime', 'endTime', 'timezone', 'durationInMinutes'].includes(param)
     )
   }, [selectedTemplate])
 
@@ -422,14 +456,28 @@ function CalendarInvites() {
                 <PageCard header="2. Calendar Details" className="mb-3">
                   <div className="mb-3">
                     <label className="form-label">
+                      Date <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={date}
+                      onChange={e => setDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">
                       Start Time <span className="text-danger">*</span>
                     </label>
                     <input
-                      type="datetime-local"
+                      type="text"
                       className="form-control"
-                      value={startTime}
-                      onChange={e => setStartTime(e.target.value)}
+                      value={time12h}
+                      onChange={e => setTime12h(e.target.value)}
+                      placeholder="02:00 PM"
                     />
+                    <div className="form-text">Format: HH:MM AM/PM (e.g., 02:00 PM)</div>
                   </div>
 
                   <div className="mb-3">
@@ -462,7 +510,7 @@ function CalendarInvites() {
                   {endTime && (
                     <div className="alert alert-info mb-0">
                       <small>
-                        <strong>End Time:</strong> {new Date(endTime).toLocaleString()}
+                        <strong>End Time:</strong> {format12HourTime(endTime)}
                       </small>
                     </div>
                   )}
@@ -571,10 +619,21 @@ function CalendarInvites() {
                 </div>
 
                 <div className="mb-3">
+                  <label className="form-label fw-bold">Date:</label>
+                  <div className="p-2 bg-light rounded border">
+                    {startTime ? (
+                      formatLongDate(startTime)
+                    ) : (
+                      <span className="text-muted">Not set</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-3">
                   <label className="form-label fw-bold">Start Time:</label>
                   <div className="p-2 bg-light rounded border">
                     {startTime ? (
-                      new Date(startTime).toLocaleString()
+                      format12HourTime(startTime)
                     ) : (
                       <span className="text-muted">Not set</span>
                     )}
@@ -585,7 +644,7 @@ function CalendarInvites() {
                   <label className="form-label fw-bold">End Time:</label>
                   <div className="p-2 bg-light rounded border">
                     {endTime ? (
-                      new Date(endTime).toLocaleString()
+                      format12HourTime(endTime)
                     ) : (
                       <span className="text-muted">Not set</span>
                     )}

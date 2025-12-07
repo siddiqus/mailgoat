@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { calculateEndTime, formatDateTimeWithDay } from './timeUtils'
+import {
+  calculateEndTime,
+  formatDateTimeWithDay,
+  formatLongDate,
+  format12HourTime,
+  combineDateAndTime,
+  parse12HourTimeTo24Hour,
+  convert24HourTo12Hour,
+} from './timeUtils'
 
 describe('timeUtils', () => {
   describe('formatDateTimeWithDay', () => {
@@ -235,6 +243,213 @@ describe('timeUtils', () => {
       const startTime = '2025-12-09T13:00'
       const result = calculateEndTime(startTime, 120)
       expect(result).toBe('2025-12-09T15:00')
+    })
+  })
+
+  describe('formatLongDate', () => {
+    it('should format date in long format with ordinal', () => {
+      // December 11, 2025 is a Thursday
+      const dateString = '2025-12-11T14:00'
+      const result = formatLongDate(dateString)
+      expect(result).toBe('Thursday, 11th December 2025')
+    })
+
+    it('should handle 1st correctly', () => {
+      const dateString = '2025-12-01T10:00'
+      const result = formatLongDate(dateString)
+      expect(result).toBe('Monday, 1st December 2025')
+    })
+
+    it('should handle 2nd correctly', () => {
+      const dateString = '2025-12-02T10:00'
+      const result = formatLongDate(dateString)
+      expect(result).toBe('Tuesday, 2nd December 2025')
+    })
+
+    it('should handle 3rd correctly', () => {
+      const dateString = '2025-12-03T10:00'
+      const result = formatLongDate(dateString)
+      expect(result).toBe('Wednesday, 3rd December 2025')
+    })
+
+    it('should handle 21st correctly', () => {
+      const dateString = '2025-12-21T10:00'
+      const result = formatLongDate(dateString)
+      expect(result).toBe('Sunday, 21st December 2025')
+    })
+
+    it('should handle 22nd correctly', () => {
+      const dateString = '2025-12-22T10:00'
+      const result = formatLongDate(dateString)
+      expect(result).toBe('Monday, 22nd December 2025')
+    })
+
+    it('should handle 23rd correctly', () => {
+      const dateString = '2025-12-23T10:00'
+      const result = formatLongDate(dateString)
+      expect(result).toBe('Tuesday, 23rd December 2025')
+    })
+
+    it('should handle 11th-13th correctly (special case)', () => {
+      expect(formatLongDate('2025-12-11T10:00')).toBe('Thursday, 11th December 2025')
+      expect(formatLongDate('2025-12-12T10:00')).toBe('Friday, 12th December 2025')
+      expect(formatLongDate('2025-12-13T10:00')).toBe('Saturday, 13th December 2025')
+    })
+
+    it('should return empty string for invalid date', () => {
+      const result = formatLongDate('invalid')
+      expect(result).toBe('')
+    })
+
+    it('should return empty string for empty string', () => {
+      const result = formatLongDate('')
+      expect(result).toBe('')
+    })
+  })
+
+  describe('format12HourTime', () => {
+    it('should format 2:00 PM correctly', () => {
+      const dateString = '2025-12-08T14:00'
+      const result = format12HourTime(dateString)
+      expect(result).toBe('02:00 PM')
+    })
+
+    it('should format midnight correctly', () => {
+      const dateString = '2025-12-08T00:00'
+      const result = format12HourTime(dateString)
+      expect(result).toBe('12:00 AM')
+    })
+
+    it('should format noon correctly', () => {
+      const dateString = '2025-12-08T12:00'
+      const result = format12HourTime(dateString)
+      expect(result).toBe('12:00 PM')
+    })
+
+    it('should format morning time correctly', () => {
+      const dateString = '2025-12-08T09:30'
+      const result = format12HourTime(dateString)
+      expect(result).toBe('09:30 AM')
+    })
+
+    it('should format 11:59 PM correctly', () => {
+      const dateString = '2025-12-08T23:59'
+      const result = format12HourTime(dateString)
+      expect(result).toBe('11:59 PM')
+    })
+
+    it('should return empty string for invalid date', () => {
+      const result = format12HourTime('invalid')
+      expect(result).toBe('')
+    })
+
+    it('should return empty string for empty string', () => {
+      const result = format12HourTime('')
+      expect(result).toBe('')
+    })
+  })
+
+  describe('combineDateAndTime', () => {
+    it('should combine date and time correctly', () => {
+      const result = combineDateAndTime('2025-12-08', '14:00')
+      expect(result).toBe('2025-12-08T14:00')
+    })
+
+    it('should return empty string if date is missing', () => {
+      const result = combineDateAndTime('', '14:00')
+      expect(result).toBe('')
+    })
+
+    it('should return empty string if time is missing', () => {
+      const result = combineDateAndTime('2025-12-08', '')
+      expect(result).toBe('')
+    })
+  })
+
+  describe('parse12HourTimeTo24Hour', () => {
+    it('should parse 02:00 PM to 14:00', () => {
+      const result = parse12HourTimeTo24Hour('02:00 PM')
+      expect(result).toBe('14:00')
+    })
+
+    it('should parse 02:00 AM to 02:00', () => {
+      const result = parse12HourTimeTo24Hour('02:00 AM')
+      expect(result).toBe('02:00')
+    })
+
+    it('should parse 12:00 PM (noon) to 12:00', () => {
+      const result = parse12HourTimeTo24Hour('12:00 PM')
+      expect(result).toBe('12:00')
+    })
+
+    it('should parse 12:00 AM (midnight) to 00:00', () => {
+      const result = parse12HourTimeTo24Hour('12:00 AM')
+      expect(result).toBe('00:00')
+    })
+
+    it('should parse 11:59 PM to 23:59', () => {
+      const result = parse12HourTimeTo24Hour('11:59 PM')
+      expect(result).toBe('23:59')
+    })
+
+    it('should parse single digit hour', () => {
+      const result = parse12HourTimeTo24Hour('9:30 AM')
+      expect(result).toBe('09:30')
+    })
+
+    it('should be case insensitive for AM/PM', () => {
+      expect(parse12HourTimeTo24Hour('02:00 pm')).toBe('14:00')
+      expect(parse12HourTimeTo24Hour('02:00 Pm')).toBe('14:00')
+      expect(parse12HourTimeTo24Hour('02:00 am')).toBe('02:00')
+    })
+
+    it('should return empty string for invalid format', () => {
+      expect(parse12HourTimeTo24Hour('invalid')).toBe('')
+      expect(parse12HourTimeTo24Hour('25:00 PM')).toBe('')
+      expect(parse12HourTimeTo24Hour('00:00 PM')).toBe('')
+      expect(parse12HourTimeTo24Hour('13:00 PM')).toBe('')
+    })
+
+    it('should return empty string for empty input', () => {
+      const result = parse12HourTimeTo24Hour('')
+      expect(result).toBe('')
+    })
+  })
+
+  describe('convert24HourTo12Hour', () => {
+    it('should convert 14:00 to 02:00 PM', () => {
+      const result = convert24HourTo12Hour('14:00')
+      expect(result).toBe('02:00 PM')
+    })
+
+    it('should convert 02:00 to 02:00 AM', () => {
+      const result = convert24HourTo12Hour('02:00')
+      expect(result).toBe('02:00 AM')
+    })
+
+    it('should convert 12:00 (noon) to 12:00 PM', () => {
+      const result = convert24HourTo12Hour('12:00')
+      expect(result).toBe('12:00 PM')
+    })
+
+    it('should convert 00:00 (midnight) to 12:00 AM', () => {
+      const result = convert24HourTo12Hour('00:00')
+      expect(result).toBe('12:00 AM')
+    })
+
+    it('should convert 23:59 to 11:59 PM', () => {
+      const result = convert24HourTo12Hour('23:59')
+      expect(result).toBe('11:59 PM')
+    })
+
+    it('should return empty string for invalid time', () => {
+      expect(convert24HourTo12Hour('25:00')).toBe('')
+      expect(convert24HourTo12Hour('invalid')).toBe('')
+    })
+
+    it('should return empty string for empty input', () => {
+      const result = convert24HourTo12Hour('')
+      expect(result).toBe('')
     })
   })
 })

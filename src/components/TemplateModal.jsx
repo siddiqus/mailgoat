@@ -3,7 +3,7 @@ import { sanitizeHtml } from '../utils/sanitizer'
 import { validateHTML, extractParameters } from '../utils/templateValidator'
 import RichTextEditor from './RichTextEditor'
 
-const CALENDAR_PREDEFINED_PARAMS = ['startTime', 'timezone', 'durationInMinutes']
+const CALENDAR_PREDEFINED_PARAMS = ['date', 'startTime', 'endTime', 'timezone', 'durationInMinutes']
 
 function TemplateModal({ show, onHide, onSave, template = null }) {
   const [name, setName] = useState('')
@@ -168,21 +168,6 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
           </div>
           <div className="modal-body">
             <div className="mb-3">
-              <label htmlFor="templateName" className="form-label">
-                Template Name <span className="text-danger">*</span>
-              </label>
-              <input
-                type="text"
-                id="templateName"
-                className={`form-control ${nameError ? 'is-invalid' : ''}`}
-                value={name}
-                onChange={handleNameChange}
-                placeholder="Enter a descriptive name for your template"
-              />
-              {nameError && <div className="invalid-feedback d-block">{nameError}</div>}
-            </div>
-
-            <div className="mb-3">
               <label htmlFor="templateType" className="form-label">
                 Template Type <span className="text-danger">*</span>
               </label>
@@ -201,10 +186,25 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
               )}
               {!template && type === 'calendar' && (
                 <div className="form-text text-info">
-                  Calendar templates will automatically include parameters: startTime, timezone,
-                  durationInMinutes
+                  Calendar templates will automatically include parameters: date, startTime,
+                  endTime, timezone, durationInMinutes
                 </div>
               )}
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="templateName" className="form-label">
+                Template Name <span className="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                id="templateName"
+                className={`form-control ${nameError ? 'is-invalid' : ''}`}
+                value={name}
+                onChange={handleNameChange}
+                placeholder="Enter a descriptive name for your template"
+              />
+              {nameError && <div className="invalid-feedback d-block">{nameError}</div>}
             </div>
 
             <div className="mb-3">
