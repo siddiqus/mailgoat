@@ -13,6 +13,7 @@ import EmailDetailModal from '../components/EmailDetailModal'
 import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
 import SearchableSelect from '../components/SearchableSelect'
+import { useAlert } from '../contexts/AlertContext'
 import { getEmailAnalytics } from '../services/analyticsService'
 import { getAllCampaigns } from '../services/campaignService'
 import { getAllHistory } from '../services/emailHistoryService'
@@ -22,6 +23,7 @@ import { getAllTemplates } from '../services/templateRepositoryService'
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 function Analytics() {
+  const { showAlert } = useAlert()
   const [campaigns, setCampaigns] = useState([])
   const [templates, setTemplates] = useState([])
   const [history, setHistory] = useState([])
@@ -51,7 +53,11 @@ function Analytics() {
       setHistory(historyData)
     } catch (error) {
       console.error('Error loading initial data:', error)
-      alert('Failed to load data')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load data',
+        type: 'danger',
+      })
     } finally {
       setLoading(false)
     }
@@ -60,7 +66,11 @@ function Analytics() {
   const handleViewAnalytics = async () => {
     // Validate that at least one filter is selected
     if (selectedCampaignFilter === 'all' && selectedTemplateFilter === 'all') {
-      alert('Please select at least one campaign or template to view analytics')
+      showAlert({
+        title: 'Validation Error',
+        message: 'Please select at least one campaign or template to view analytics',
+        type: 'warning',
+      })
       return
     }
 
@@ -80,7 +90,11 @@ function Analytics() {
       setAnalyticsData(result)
     } catch (error) {
       console.error('Error fetching analytics:', error)
-      alert(`Failed to fetch analytics: ${error.message}`)
+      showAlert({
+        title: 'Error',
+        message: `Failed to fetch analytics: ${error.message}`,
+        type: 'danger',
+      })
     } finally {
       setFetchingAnalytics(false)
     }

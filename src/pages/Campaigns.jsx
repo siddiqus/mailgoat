@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
+import { useAlert } from '../contexts/AlertContext'
 import { getAllCampaigns, createCampaign, updateCampaign } from '../services/campaignService'
+import { colorPalette as campaignColorPalette } from '../utils/colorUtils'
 
 function Campaigns() {
+  const { showAlert } = useAlert()
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -12,40 +15,6 @@ function Campaigns() {
   const [campaignName, setCampaignName] = useState('')
   const [campaignColor, setCampaignColor] = useState('#0d6efd')
   const [saving, setSaving] = useState(false)
-
-  // Predefined color palette
-  const colorPalette = [
-    '#0d6efd', // Blue
-    '#6610f2', // Indigo
-    '#6f42c1', // Purple
-    '#d63384', // Pink
-    '#dc3545', // Red
-    '#fd7e14', // Orange
-    '#ffc107', // Yellow
-    '#198754', // Green
-    '#20c997', // Teal
-    '#0dcaf0', // Cyan
-    '#17a2b8', // Info
-    '#6c757d', // Gray
-    '#343a40', // Dark Gray
-    '#f8f9fa', // Light Gray
-    '#e83e8c', // Hot Pink
-    '#ff6b6b', // Coral Red
-    '#4ecdc4', // Turquoise
-    '#95e1d3', // Mint
-    '#f38181', // Salmon
-    '#aa96da', // Lavender
-    '#fcbad3', // Light Pink
-    '#ffffd2', // Light Yellow
-    '#a8e6cf', // Pale Green
-    '#ffd3b6', // Peach
-    '#ffaaa5', // Light Coral
-    '#ff8b94', // Rose
-    '#9e9e9e', // Medium Gray
-    '#795548', // Brown
-    '#607d8b', // Blue Gray
-    '#8e44ad', // Deep Purple
-  ]
 
   useEffect(() => {
     loadCampaigns()
@@ -58,7 +27,11 @@ function Campaigns() {
       setCampaigns(data)
     } catch (error) {
       console.error('Error loading campaigns:', error)
-      alert('Failed to load campaigns')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load campaigns',
+        type: 'danger',
+      })
     } finally {
       setLoading(false)
     }
@@ -91,7 +64,11 @@ function Campaigns() {
     e.preventDefault()
 
     if (!campaignName.trim()) {
-      alert('Please enter a campaign name')
+      showAlert({
+        title: 'Validation Error',
+        message: 'Please enter a campaign name',
+        type: 'warning',
+      })
       return
     }
 
@@ -109,7 +86,11 @@ function Campaigns() {
       await loadCampaigns()
     } catch (error) {
       console.error('Error saving campaign:', error)
-      alert(`Failed to save campaign: ${error.message}`)
+      showAlert({
+        title: 'Error',
+        message: `Failed to save campaign: ${error.message}`,
+        type: 'danger',
+      })
     } finally {
       setSaving(false)
     }
@@ -256,7 +237,7 @@ function Campaigns() {
                   <div className="mb-3">
                     <label className="form-label">Color</label>
                     <div className="d-flex gap-2 flex-wrap">
-                      {colorPalette.map(color => (
+                      {campaignColorPalette.map(color => (
                         <button
                           key={color}
                           type="button"

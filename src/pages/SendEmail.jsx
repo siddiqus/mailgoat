@@ -4,6 +4,7 @@ import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
 import SearchableSelect from '../components/SearchableSelect'
 import Tabs from '../components/ui/Tabs'
+import { useAlert } from '../contexts/AlertContext'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { getAllCampaigns } from '../services/campaignService'
 import { saveToHistory } from '../services/emailHistoryService'
@@ -26,6 +27,7 @@ const settingsRepository = new LocalStorageSettingsRepository()
 
 function SendEmail() {
   const navigate = useNavigate()
+  const { showAlert, showConfirm } = useAlert()
   const [templates, setTemplates] = useState([])
   const [campaigns, setCampaigns] = useState([])
   const [selectedTemplate, setSelectedTemplate] = useState(null)
@@ -69,7 +71,11 @@ function SendEmail() {
       setTemplates(data)
     } catch (error) {
       console.error('Error loading templates:', error)
-      alert('Failed to load templates')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load templates',
+        type: 'danger',
+      })
     } finally {
       setLoading(false)
     }
@@ -166,38 +172,62 @@ function SendEmail() {
 
   const handleSendEmail = async () => {
     if (!recipients.trim()) {
-      alert('Please enter a recipient email address')
+      showAlert({
+        title: 'Validation Error',
+        message: 'Please enter a recipient email address',
+        type: 'warning',
+      })
       return
     }
 
     // Check if multiple emails are entered
     const emailList = parseEmailList(recipients)
     if (emailList.length > 1) {
-      alert('Only one recipient email is allowed for single email')
+      showAlert({
+        title: 'Validation Error',
+        message: 'Only one recipient email is allowed for single email',
+        type: 'warning',
+      })
       return
     }
 
     const recipientsValidation = validateEmailList(recipients)
     if (!recipientsValidation.isValid) {
-      alert(`Invalid recipient email: ${recipientsValidation.invalidEmails.join(', ')}`)
+      showAlert({
+        title: 'Validation Error',
+        message: `Invalid recipient email: ${recipientsValidation.invalidEmails.join(', ')}`,
+        type: 'warning',
+      })
       return
     }
 
     if (ccList.trim()) {
       const ccValidation = validateEmailList(ccList)
       if (!ccValidation.isValid) {
-        alert(`Invalid CC email(s): ${ccValidation.invalidEmails.join(', ')}`)
+        showAlert({
+          title: 'Validation Error',
+          message: `Invalid CC email(s): ${ccValidation.invalidEmails.join(', ')}`,
+          type: 'warning',
+        })
         return
       }
     }
 
     if (!subject.trim()) {
-      alert('Please enter a subject')
+      showAlert({
+        title: 'Validation Error',
+        message: 'Please enter a subject',
+        type: 'warning',
+      })
       return
     }
 
     if (!htmlBody.trim()) {
-      alert('Email body cannot be empty')
+      showAlert({
+        title: 'Validation Error',
+        message: 'Email body cannot be empty',
+        type: 'warning',
+      })
       return
     }
 
@@ -205,8 +235,14 @@ function SendEmail() {
       param => !parameterValues[param] || parameterValues[param].trim() === ''
     )
     if (hasUnfilledParams) {
-      const confirmSend = window.confirm('Some parameters are not filled. Do you want to continue?')
-      if (!confirmSend) return
+      const confirmed = await showConfirm({
+        title: 'Unfilled Parameters',
+        message: 'Some parameters are not filled. Do you want to continue?',
+        type: 'warning',
+        confirmText: 'Continue',
+        cancelText: 'Cancel',
+      })
+      if (!confirmed) return
     }
 
     setSending(true)
@@ -234,7 +270,11 @@ function SendEmail() {
           console.error('Failed to save email to history:', historyError)
         }
 
-        alert('Email sent successfully!')
+        showAlert({
+          title: 'Success',
+          message: 'Email sent successfully!',
+          type: 'success',
+        })
 
         setSelectedTemplate(null)
         setSelectedCampaign(null)
@@ -244,11 +284,19 @@ function SendEmail() {
         setRecipientsError('')
         setCcListError('')
       } catch (error) {
-        alert(`Error sending email: ${error.message}`)
+        showAlert({
+          title: 'Error',
+          message: `Error sending email: ${error.message}`,
+          type: 'danger',
+        })
       }
     } catch (error) {
       console.error('Error sending email:', error)
-      alert(`Failed to send email: ${error.message}`)
+      showAlert({
+        title: 'Error',
+        message: `Failed to send email: ${error.message}`,
+        type: 'danger',
+      })
     } finally {
       setSending(false)
     }
@@ -357,12 +405,18 @@ function SendEmail() {
       setFileErrors(errors)
 
       if (errors.length > 0) {
-        alert(
-          `File validation failed with ${errors.length} error(s). Please check the errors below.`
-        )
+        showAlert({
+          title: 'Validation Failed',
+          message: `File validation failed with ${errors.length} error(s). Please check the errors below.`,
+          type: 'warning',
+        })
       }
     } catch (error) {
-      alert(`Error parsing file: ${error.message}`)
+      showAlert({
+        title: 'Error',
+        message: `Error parsing file: ${error.message}`,
+        type: 'danger',
+      })
       event.target.value = ''
     }
   }
@@ -399,7 +453,11 @@ function SendEmail() {
 
   const handleBulkSend = async () => {
     if (!bulkTemplate) {
-      alert('Please select a template')
+      showAlert({
+        title: 'Validation Error',
+        message: 'Please select a template',
+        type: 'warning',
+      })
       return
     }
 
@@ -408,12 +466,20 @@ function SendEmail() {
 
     if (bulkInputMode === 'file') {
       if (fileData.length === 0) {
-        alert('Please upload a file with data')
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please upload a file with data',
+          type: 'warning',
+        })
         return
       }
 
       if (fileErrors.length > 0) {
-        alert('Please fix file validation errors before sending')
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please fix file validation errors before sending',
+          type: 'warning',
+        })
         return
       }
 
@@ -421,13 +487,21 @@ function SendEmail() {
       emailCount = fileData.length
     } else {
       if (manualEntries.length === 0) {
-        alert('Please add at least one recipient')
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please add at least one recipient',
+          type: 'warning',
+        })
         return
       }
 
       const validationErrors = validateManualEntries()
       if (validationErrors.length > 0) {
-        alert(`Please fix the following errors:\n\n${validationErrors.join('\n')}`)
+        showAlert({
+          title: 'Validation Errors',
+          message: `Please fix the following errors:\n\n${validationErrors.join('\n')}`,
+          type: 'warning',
+        })
         return
       }
 
@@ -435,10 +509,14 @@ function SendEmail() {
       emailCount = manualEntries.length
     }
 
-    const confirmSend = window.confirm(
-      `You are about to send ${emailCount} emails. The emails will be sent in the background. Continue?`
-    )
-    if (!confirmSend) return
+    const confirmed = await showConfirm({
+      title: 'Confirm Bulk Send',
+      message: `You are about to send ${emailCount} emails. The emails will be sent in the background. Continue?`,
+      type: 'warning',
+      confirmText: 'Send Emails',
+      cancelText: 'Cancel',
+    })
+    if (!confirmed) return
 
     setSending(true)
     try {
@@ -464,7 +542,11 @@ function SendEmail() {
       navigate(`/history?${queryParams.toString()}`)
     } catch (error) {
       console.error('Error initiating bulk email send:', error)
-      alert(`Failed to initiate bulk email send: ${error.message}`)
+      showAlert({
+        title: 'Error',
+        message: `Failed to initiate bulk email send: ${error.message}`,
+        type: 'danger',
+      })
       setSending(false)
     }
   }

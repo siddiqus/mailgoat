@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAlert } from '../contexts/AlertContext'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { testWebhook } from '../services/emailService'
 import ImportExportTab from './Settings/ImportExportTab'
@@ -10,6 +11,7 @@ import './Settings.css'
 const settingsRepository = new LocalStorageSettingsRepository()
 
 function Settings() {
+  const { showAlert } = useAlert()
   const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -63,7 +65,11 @@ function Settings() {
       setPixelTrackingEnabled(data.pixelTracking?.enabled ?? true)
     } catch (error) {
       console.error('Error loading settings:', error)
-      alert('Failed to load settings')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load settings',
+        type: 'danger',
+      })
     } finally {
       setLoading(false)
     }
@@ -95,14 +101,22 @@ function Settings() {
     if (activeTab === 'webhook') {
       // Validate webhook URL
       if (!webhookUrl.trim()) {
-        alert('Please enter a webhook URL')
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please enter a webhook URL',
+          type: 'warning',
+        })
         return
       }
 
       try {
         new URL(webhookUrl)
       } catch (error) {
-        alert('Please enter a valid URL')
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please enter a valid URL',
+          type: 'warning',
+        })
         return
       }
 
@@ -119,29 +133,49 @@ function Settings() {
 
         await settingsRepository.saveSettings(updatedSettings)
         setSettings(updatedSettings)
-        alert('Webhook settings saved successfully!')
+        showAlert({
+          title: 'Success',
+          message: 'Webhook settings saved successfully!',
+          type: 'success',
+        })
       } catch (error) {
         console.error('Error saving settings:', error)
-        alert('Failed to save settings')
+        showAlert({
+          title: 'Error',
+          message: 'Failed to save settings',
+          type: 'danger',
+        })
       } finally {
         setSaving(false)
       }
     } else if (activeTab === 'supabase') {
       // Validate Supabase settings
       if (!supabaseUrl.trim()) {
-        alert('Please enter a Supabase URL')
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please enter a Supabase URL',
+          type: 'warning',
+        })
         return
       }
 
       if (!supabaseKey.trim()) {
-        alert('Please enter a Supabase key')
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please enter a Supabase key',
+          type: 'warning',
+        })
         return
       }
 
       try {
         new URL(supabaseUrl)
       } catch (error) {
-        alert('Please enter a valid Supabase URL')
+        showAlert({
+          title: 'Validation Error',
+          message: 'Please enter a valid Supabase URL',
+          type: 'warning',
+        })
         return
       }
 
@@ -157,10 +191,18 @@ function Settings() {
 
         await settingsRepository.saveSettings(updatedSettings)
         setSettings(updatedSettings)
-        alert('Supabase settings saved successfully!')
+        showAlert({
+          title: 'Success',
+          message: 'Supabase settings saved successfully!',
+          type: 'success',
+        })
       } catch (error) {
         console.error('Error saving settings:', error)
-        alert('Failed to save settings')
+        showAlert({
+          title: 'Error',
+          message: 'Failed to save settings',
+          type: 'danger',
+        })
       } finally {
         setSaving(false)
       }
@@ -176,10 +218,18 @@ function Settings() {
 
         await settingsRepository.saveSettings(updatedSettings)
         setSettings(updatedSettings)
-        alert('Settings saved successfully!')
+        showAlert({
+          title: 'Success',
+          message: 'Settings saved successfully!',
+          type: 'success',
+        })
       } catch (error) {
         console.error('Error saving settings:', error)
-        alert('Failed to save settings')
+        showAlert({
+          title: 'Error',
+          message: 'Failed to save settings',
+          type: 'danger',
+        })
       } finally {
         setSaving(false)
       }
@@ -188,7 +238,11 @@ function Settings() {
 
   const handleTestWebhook = async () => {
     if (!webhookUrl.trim()) {
-      alert('Please enter a webhook URL first')
+      showAlert({
+        title: 'Validation Error',
+        message: 'Please enter a webhook URL first',
+        type: 'warning',
+      })
       return
     }
 
@@ -197,13 +251,25 @@ function Settings() {
       const result = await testWebhook(webhookUrl, webhookHeaders, bodyMapping)
 
       if (result.ok) {
-        alert('Test webhook sent successfully! Check your webhook endpoint.')
+        showAlert({
+          title: 'Success',
+          message: 'Test webhook sent successfully! Check your webhook endpoint.',
+          type: 'success',
+        })
       } else {
-        alert(`Webhook test failed with status: ${result.status}`)
+        showAlert({
+          title: 'Warning',
+          message: `Webhook test failed with status: ${result.status}`,
+          type: 'warning',
+        })
       }
     } catch (error) {
       console.error('Error testing webhook:', error)
-      alert(`Failed to test webhook: ${error.message}`)
+      showAlert({
+        title: 'Error',
+        message: `Failed to test webhook: ${error.message}`,
+        type: 'danger',
+      })
     } finally {
       setSaving(false)
     }
@@ -233,10 +299,18 @@ function Settings() {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      alert('Settings exported successfully!')
+      showAlert({
+        title: 'Success',
+        message: 'Settings exported successfully!',
+        type: 'success',
+      })
     } catch (error) {
       console.error('Error exporting settings:', error)
-      alert('Failed to export settings')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to export settings',
+        type: 'danger',
+      })
     }
   }
 
@@ -305,11 +379,19 @@ function Settings() {
         // Reload settings from storage
         await loadSettings()
 
-        alert('Settings imported successfully! The page will reload.')
+        showAlert({
+          title: 'Success',
+          message: 'Settings imported successfully! The page will reload.',
+          type: 'success',
+        })
         window.location.reload()
       } catch (error) {
         console.error('Error importing settings:', error)
-        alert(`Failed to import settings: ${error.message}`)
+        showAlert({
+          title: 'Error',
+          message: `Failed to import settings: ${error.message}`,
+          type: 'danger',
+        })
       } finally {
         setImporting(false)
         // Reset file input
@@ -318,7 +400,11 @@ function Settings() {
     }
 
     reader.onerror = () => {
-      alert('Failed to read file')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to read file',
+        type: 'danger',
+      })
       setImporting(false)
       event.target.value = ''
     }

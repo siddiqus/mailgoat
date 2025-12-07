@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import AlertModal from './components/AlertModal'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './components/HomePage'
 import Sidebar from './components/Sidebar'
+import { AlertProvider } from './contexts/AlertContext'
 import Analytics from './pages/Analytics'
 import Campaigns from './pages/Campaigns'
 import History from './pages/History'
@@ -12,24 +14,27 @@ import Templates from './pages/Templates'
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
-        <div className="App">
-          <Sidebar />
-          <div className="main-content">
-            <ErrorBoundary>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/templates" element={<Templates />} />
-                <Route path="/campaigns" element={<Campaigns />} />
-                <Route path="/send-email" element={<SendEmail />} />
-                <Route path="/history" element={<History />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/settings" element={<Settings />} />
-              </Routes>
-            </ErrorBoundary>
+      <AlertProvider>
+        <Router>
+          <div className="App">
+            <Sidebar />
+            <div className="main-content">
+              <ErrorBoundary>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/templates" element={<Templates />} />
+                  <Route path="/campaigns" element={<Campaigns />} />
+                  <Route path="/send-email" element={<SendEmail />} />
+                  <Route path="/history" element={<History />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Routes>
+              </ErrorBoundary>
+            </div>
           </div>
-        </div>
-      </Router>
+          <AlertModal />
+        </Router>
+      </AlertProvider>
     </ErrorBoundary>
   )
 }

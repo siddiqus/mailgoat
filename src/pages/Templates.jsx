@@ -3,6 +3,7 @@ import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
 import TemplateModal from '../components/TemplateModal'
 import TemplateViewModal from '../components/TemplateViewModal'
+import { useAlert } from '../contexts/AlertContext'
 import {
   getAllTemplates,
   createTemplate,
@@ -13,6 +14,7 @@ import {
 } from '../services/templateRepositoryService'
 
 function Templates() {
+  const { showAlert, showConfirm } = useAlert()
   const [templates, setTemplates] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
@@ -33,7 +35,11 @@ function Templates() {
       setTemplates(data)
     } catch (error) {
       console.error('Error loading templates:', error)
-      alert('Failed to load templates')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load templates',
+        type: 'danger',
+      })
     } finally {
       setLoading(false)
     }
@@ -55,16 +61,31 @@ function Templates() {
   }
 
   const handleDeleteClick = async id => {
-    if (!window.confirm('Are you sure you want to delete this template?')) {
-      return
-    }
+    const confirmed = await showConfirm({
+      title: 'Delete Template',
+      message: 'Are you sure you want to delete this template? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    })
+
+    if (!confirmed) return
 
     try {
       await deleteTemplate(id)
       await loadTemplates()
+      showAlert({
+        title: 'Success',
+        message: 'Template deleted successfully',
+        type: 'success',
+      })
     } catch (error) {
       console.error('Error deleting template:', error)
-      alert('Failed to delete template')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to delete template',
+        type: 'danger',
+      })
     }
   }
 
@@ -77,9 +98,11 @@ function Templates() {
       )
 
       if (isDuplicate) {
-        alert(
-          `A template with the name "${templateData.name}" already exists. Please choose a different name.`
-        )
+        showAlert({
+          title: 'Duplicate Name',
+          message: `A template with the name "${templateData.name}" already exists. Please choose a different name.`,
+          type: 'warning',
+        })
         return
       }
 
@@ -95,7 +118,11 @@ function Templates() {
       setEditingTemplate(null)
     } catch (error) {
       console.error('Error saving template:', error)
-      alert('Failed to save template')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to save template',
+        type: 'danger',
+      })
     }
   }
 
@@ -123,7 +150,11 @@ function Templates() {
       URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error exporting templates:', error)
-      alert('Failed to export templates')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to export templates',
+        type: 'danger',
+      })
     }
   }
 
@@ -140,10 +171,18 @@ function Templates() {
       const result = await importTemplates(text, true) // merge mode
 
       if (result.errors.length > 0) {
-        const errorMsg = `Import completed with warnings:\n\nSuccessfully imported: ${result.success} template(s)\n\nErrors:\n${result.errors.join('\n')}`
-        alert(errorMsg)
+        const errorList = result.errors.map(err => `• ${err}`).join('\n')
+        showAlert({
+          title: 'Import Completed with Warnings',
+          message: `Successfully imported: ${result.success} template(s)\n\nErrors:\n${errorList}`,
+          type: 'warning',
+        })
       } else {
-        alert(`Successfully imported ${result.success} template(s)`)
+        showAlert({
+          title: 'Success',
+          message: `Successfully imported ${result.success} template(s)`,
+          type: 'success',
+        })
       }
 
       await loadTemplates()
@@ -151,7 +190,11 @@ function Templates() {
       event.target.value = ''
     } catch (error) {
       console.error('Error importing templates:', error)
-      alert(`Failed to import templates: ${error.message}`)
+      showAlert({
+        title: 'Import Failed',
+        message: `Failed to import templates: ${error.message}`,
+        type: 'danger',
+      })
       event.target.value = ''
     }
   }

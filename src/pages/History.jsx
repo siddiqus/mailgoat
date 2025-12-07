@@ -5,12 +5,14 @@ import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
 import SearchableSelect from '../components/SearchableSelect'
 import TemplateDetailModal from '../components/TemplateDetailModal'
+import { useAlert } from '../contexts/AlertContext'
 import { getAllCampaigns } from '../services/campaignService'
 import { getAllHistory, clearAllHistory } from '../services/emailHistoryService'
 import { getTemplateById, getAllTemplates } from '../services/templateRepositoryService'
 
 function History() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { showAlert, showConfirm } = useAlert()
   const [history, setHistory] = useState([])
   const [campaigns, setCampaigns] = useState([])
   const [templates, setTemplates] = useState([])
@@ -47,7 +49,11 @@ function History() {
       setHistory(data)
     } catch (error) {
       console.error('Error loading email history:', error)
-      alert('Failed to load email history')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load email history',
+        type: 'danger',
+      })
     } finally {
       setLoading(false)
     }
@@ -60,26 +66,43 @@ function History() {
       setHistory(data)
     } catch (error) {
       console.error('Error refreshing email history:', error)
-      alert('Failed to refresh email history')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to refresh email history',
+        type: 'danger',
+      })
     } finally {
       setRefreshing(false)
     }
   }
 
   const handleClearHistory = async () => {
-    const confirmClear = window.confirm(
-      'Are you sure you want to clear all email history? This action cannot be undone.'
-    )
-    if (!confirmClear) return
+    const confirmed = await showConfirm({
+      title: 'Clear Email History',
+      message: 'Are you sure you want to clear all email history? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Clear History',
+      cancelText: 'Cancel',
+    })
+
+    if (!confirmed) return
 
     setLoading(true)
     try {
       await clearAllHistory()
       setHistory([])
-      alert('Email history cleared successfully!')
+      showAlert({
+        title: 'Success',
+        message: 'Email history cleared successfully!',
+        type: 'success',
+      })
     } catch (error) {
       console.error('Error clearing email history:', error)
-      alert('Failed to clear email history')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to clear email history',
+        type: 'danger',
+      })
     } finally {
       setLoading(false)
     }
@@ -109,11 +132,19 @@ function History() {
       if (template) {
         setSelectedTemplate(template)
       } else {
-        alert('Template not found. It may have been deleted.')
+        showAlert({
+          title: 'Template Not Found',
+          message: 'Template not found. It may have been deleted.',
+          type: 'warning',
+        })
       }
     } catch (error) {
       console.error('Error loading template:', error)
-      alert('Failed to load template details')
+      showAlert({
+        title: 'Error',
+        message: 'Failed to load template details',
+        type: 'danger',
+      })
     }
   }
 

@@ -1,0 +1,239 @@
+/* Alert Modal Overlay */
+.alert-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Alert Modal Container */
+.alert-modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1055;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease-out;
+}
+
+/* Alert Modal Content */
+.alert-modal-content {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  max-width: 480px;
+  width: 100%;
+  overflow: hidden;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Alert Modal Header */
+.alert-modal-header {
+  padding: 1.5rem 1.5rem 0 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.alert-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.alert-modal-close:hover {
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+/* Alert Modal Body */
+.alert-modal-body {
+  padding: 1rem 2rem 2rem 2rem;
+  text-align: center;
+}
+
+.alert-modal-icon {
+  margin-bottom: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+
+.alert-modal-icon.info {
+  background-color: #e7f3ff;
+}
+
+.alert-modal-icon.success {
+  background-color: #d4edda;
+}
+
+.alert-modal-icon.warning {
+  background-color: #fff3cd;
+}
+
+.alert-modal-icon.danger {
+  background-color: #f8d7da;
+}
+
+.alert-modal-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.alert-modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.alert-modal-message {
+  font-size: 1rem;
+  color: #6c757d;
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+/* Alert Modal Footer */
+.alert-modal-footer {
+  padding: 0 2rem 2rem 2rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.alert-modal-footer .btn {
+  min-width: 120px;
+  padding: 0.625rem 1.5rem;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.alert-modal-footer .btn-secondary {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+  color: #495057;
+}
+
+.alert-modal-footer .btn-secondary:hover {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+  color: #212529;
+}
+
+.alert-modal-footer .btn-primary {
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.25);
+}
+
+.alert-modal-footer .btn-primary:hover {
+  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.35);
+}
+
+.alert-modal-footer .btn-success {
+  box-shadow: 0 2px 4px rgba(25, 135, 84, 0.25);
+}
+
+.alert-modal-footer .btn-success:hover {
+  box-shadow: 0 4px 8px rgba(25, 135, 84, 0.35);
+}
+
+.alert-modal-footer .btn-warning {
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.25);
+}
+
+.alert-modal-footer .btn-warning:hover {
+  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.35);
+}
+
+.alert-modal-footer .btn-danger {
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.25);
+}
+
+.alert-modal-footer .btn-danger:hover {
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.35);
+}
+
+/* Mobile Responsive */
+@media (max-width: 575.98px) {
+  .alert-modal-content {
+    max-width: 100%;
+    border-radius: 8px;
+  }
+
+  .alert-modal-body {
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+  }
+
+  .alert-modal-footer {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+  }
+
+  .alert-modal-footer .btn {
+    min-width: 100px;
+    font-size: 0.9rem;
+  }
+
+  .alert-modal-title {
+    font-size: 1.25rem;
+  }
+
+  .alert-modal-message {
+    font-size: 0.9rem;
+  }
+
+  .alert-modal-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 1rem;
+  }
+
+  .alert-modal-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+}
