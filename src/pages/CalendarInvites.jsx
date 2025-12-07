@@ -11,7 +11,7 @@ import { prepareEmailFromTemplate } from '../services/templateService'
 import { parseEmailList, validateEmailList } from '../utils/emailUtils'
 import { sanitizeHtml } from '../utils/sanitizer'
 import { calculateEndTime } from '../utils/timeUtils'
-import timezones from '../utils/timezones.json'
+import { getBrowserTimezone, getTimezoneOptions } from '../utils/timezoneUtils'
 
 const settingsRepository = new LocalStorageSettingsRepository()
 
@@ -24,7 +24,7 @@ function CalendarInvites() {
   const [recipient, setRecipient] = useState('')
   const [subject, setSubject] = useState('')
   const [startTime, setStartTime] = useState('')
-  const [timezone, setTimezone] = useState('Eastern Standard Time')
+  const [timezone, setTimezone] = useState(getBrowserTimezone())
   const [durationInMinutes, setDurationInMinutes] = useState('60')
   const [parameterValues, setParameterValues] = useState({})
 
@@ -70,6 +70,10 @@ function CalendarInvites() {
       const isConfigured =
         settings.calendarWebhook?.url && settings.calendarWebhook.url.trim() !== ''
       setWebhookConfigured(isConfigured)
+
+      // Load default timezone from settings (fallback to browser timezone)
+      const defaultTimezone = settings.defaultTimezone || getBrowserTimezone()
+      setTimezone(defaultTimezone)
     } catch (error) {
       console.error('Error loading settings:', error)
       setWebhookConfigured(false)
@@ -305,17 +309,18 @@ function CalendarInvites() {
         type: 'success',
       })
 
-      // Reset form
+      // Reset form - reload default timezone from settings
       setSelectedTemplate(null)
       setRecipient('')
       setSubject('')
       setStartTime('')
-      setTimezone('Eastern Standard Time')
       setDurationInMinutes('60')
       setParameterValues({})
       setAttachmentFile(null)
       setAttachmentBase64('')
       setRecipientError('')
+      // Reload timezone from settings
+      loadSettings()
     } catch (error) {
       console.error('Error sending calendar invite:', error)
       showAlert({
@@ -340,24 +345,8 @@ function CalendarInvites() {
     return options
   }, [templates])
 
-  // Build timezone options - sorted alphabetically and deduplicated
-  const timezoneOptions = useMemo(() => {
-    // Use a Map to deduplicate by value (windowsTime)
-    const uniqueMap = new Map()
-
-    timezones.forEach(tz => {
-      // Only add if we haven't seen this windowsTime before
-      if (!uniqueMap.has(tz.windowsTime)) {
-        uniqueMap.set(tz.windowsTime, {
-          value: tz.windowsTime,
-          label: `${tz.windowsTime} (${tz.city})`,
-        })
-      }
-    })
-
-    // Convert Map values to array and sort alphabetically
-    return Array.from(uniqueMap.values()).sort((a, b) => a.label.localeCompare(b.label))
-  }, [])
+  // Build timezone options using utility function
+  const timezoneOptions = useMemo(() => getTimezoneOptions(), [])
 
   // Get non-predefined parameters
   const otherParameters = useMemo(() => {

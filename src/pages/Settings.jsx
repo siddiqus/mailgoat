@@ -3,6 +3,7 @@ import { useAlert } from '../contexts/AlertContext'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { sendCalendarInvite } from '../services/calendarInviteService'
 import { testWebhook } from '../services/emailService'
+import { getBrowserTimezone } from '../utils/timezoneUtils'
 import CalendarWebhookTab from './Settings/CalendarWebhookTab'
 import ImportExportTab from './Settings/ImportExportTab'
 import OthersTab from './Settings/OthersTab'
@@ -39,6 +40,7 @@ function Settings() {
 
   // Other settings
   const [pixelTrackingEnabled, setPixelTrackingEnabled] = useState(true)
+  const [defaultTimezone, setDefaultTimezone] = useState(getBrowserTimezone())
 
   // Import/Export state
   const [importing, setImporting] = useState(false)
@@ -73,6 +75,7 @@ function Settings() {
 
       // Load other settings
       setPixelTrackingEnabled(data.pixelTracking?.enabled ?? true)
+      setDefaultTimezone(data.defaultTimezone || getBrowserTimezone())
     } catch (error) {
       console.error('Error loading settings:', error)
       showAlert({
@@ -288,6 +291,7 @@ function Settings() {
           pixelTracking: {
             enabled: pixelTrackingEnabled,
           },
+          defaultTimezone,
         }
 
         await settingsRepository.saveSettings(updatedSettings)
@@ -496,6 +500,7 @@ function Settings() {
           pixelTracking: {
             enabled: importedData.pixelTracking?.enabled ?? true,
           },
+          defaultTimezone: importedData.defaultTimezone || getBrowserTimezone(),
           createdAt: importedData.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -570,7 +575,7 @@ function Settings() {
             className={`settings-tab-button ${activeTab === 'supabase' ? 'active' : ''}`}
             onClick={() => setActiveTab('supabase')}
           >
-            Supabase Integration
+            Email Pixel Integration
           </button>
           <button
             className={`settings-tab-button ${activeTab === 'calendar-webhook' ? 'active' : ''}`}
@@ -579,16 +584,16 @@ function Settings() {
             Calendar Webhook
           </button>
           <button
+            className={`settings-tab-button ${activeTab === 'others' ? 'active' : ''}`}
+            onClick={() => setActiveTab('others')}
+          >
+            Other Settings
+          </button>
+          <button
             className={`settings-tab-button ${activeTab === 'import-export' ? 'active' : ''}`}
             onClick={() => setActiveTab('import-export')}
           >
             Import/Export
-          </button>
-          <button
-            className={`settings-tab-button ${activeTab === 'others' ? 'active' : ''}`}
-            onClick={() => setActiveTab('others')}
-          >
-            Others
           </button>
         </div>
 
@@ -642,6 +647,8 @@ function Settings() {
             <OthersTab
               pixelTrackingEnabled={pixelTrackingEnabled}
               setPixelTrackingEnabled={setPixelTrackingEnabled}
+              defaultTimezone={defaultTimezone}
+              setDefaultTimezone={setDefaultTimezone}
               saving={saving}
               handleSave={handleSave}
             />

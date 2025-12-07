@@ -1,4 +1,17 @@
-function OthersTab({ pixelTrackingEnabled, setPixelTrackingEnabled, saving, handleSave }) {
+import { useMemo } from 'react'
+import SearchableSelect from '../../components/SearchableSelect'
+import { getTimezoneOptions } from '../../utils/timezoneUtils'
+
+function OthersTab({
+  pixelTrackingEnabled,
+  setPixelTrackingEnabled,
+  defaultTimezone,
+  setDefaultTimezone,
+  saving,
+  handleSave,
+}) {
+  const timezoneOptions = useMemo(() => getTimezoneOptions(), [])
+
   return (
     <div className="row">
       <div className="col-lg-8">
@@ -7,6 +20,23 @@ function OthersTab({ pixelTrackingEnabled, setPixelTrackingEnabled, saving, hand
             <h5 className="mb-0">Other Settings</h5>
           </div>
           <div className="settings-card-body">
+            <div className="mb-4">
+              <label className="form-label">
+                <strong>Default Timezone</strong>
+              </label>
+              <SearchableSelect
+                options={timezoneOptions}
+                value={defaultTimezone}
+                onChange={value => setDefaultTimezone(value)}
+                placeholder="Select default timezone"
+                allowClear={false}
+              />
+              <div className="form-text mt-2">
+                This timezone will be used by default when creating calendar invites. You can change
+                it for individual invites.
+              </div>
+            </div>
+            <hr />
             <div className="mb-4">
               <div className="form-check form-switch">
                 <input
@@ -72,6 +102,13 @@ function OthersTab({ pixelTrackingEnabled, setPixelTrackingEnabled, saving, hand
             <h6 className="mb-0">Current Status</h6>
           </div>
           <div className="settings-card-body">
+            <div className="mb-3">
+              <strong className="small">Default Timezone:</strong>
+              <div className="mt-1">
+                <small className="text-muted">{defaultTimezone}</small>
+              </div>
+            </div>
+
             <div className="mb-3">
               <strong className="small">Pixel Tracking:</strong>
               <div className="mt-1">
