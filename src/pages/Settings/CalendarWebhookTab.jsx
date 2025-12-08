@@ -175,10 +175,12 @@ function CalendarWebhookTab({
                     startTime: '2025-12-08T16:00:00.000Z',
                     endTime: '2025-12-08T17:00:00.000Z',
                     timezone: 'Eastern Standard Time',
-                    attachment: {
-                      name: 'optional-file.pdf',
-                      fileBase64: 'base64-encoded-pdf-content',
-                    },
+                    attachments: [
+                      {
+                        name: 'optional-file.pdf',
+                        fileBase64: 'base64-encoded-pdf-content',
+                      },
+                    ],
                   },
                   null,
                   2

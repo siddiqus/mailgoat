@@ -37,9 +37,8 @@ function CalendarInvites() {
   const [durationInMinutes, setDurationInMinutes] = useState('60')
   const [parameterValues, setParameterValues] = useState({})
 
-  // Attachment fields
-  const [attachmentFile, setAttachmentFile] = useState(null)
-  const [attachmentBase64, setAttachmentBase64] = useState('')
+  // Attachment fields (now supports multiple files)
+  const [attachmentFiles, setAttachmentFiles] = useState([])
 
   // Preview and validation
   const [htmlBody, setHtmlBody] = useState('')
@@ -189,45 +188,52 @@ function CalendarInvites() {
     }
   }
 
-  const handleFileChange = async e => {
-    const file = e.target.files[0]
-    if (!file) {
-      setAttachmentFile(null)
-      setAttachmentBase64('')
+  const handleFileChange = e => {
+    const files = Array.from(e.target.files)
+    if (files.length === 0) {
       return
     }
 
-    // Validate file type
-    if (file.type !== 'application/pdf') {
-      showAlert({
-        title: 'Invalid File Type',
-        message: 'Only PDF files are allowed',
-        type: 'warning',
-      })
+    // Validate each file
+    const validFiles = []
+    for (const file of files) {
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        showAlert({
+          title: 'Invalid File Type',
+          message: `${file.name}: Only PDF files are allowed`,
+          type: 'warning',
+        })
+        continue
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showAlert({
+          title: 'File Too Large',
+          message: `${file.name}: File size must be less than 5MB`,
+          type: 'warning',
+        })
+        continue
+      }
+
+      validFiles.push(file)
+    }
+
+    if (validFiles.length === 0) {
       e.target.value = ''
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showAlert({
-        title: 'File Too Large',
-        message: 'File size must be less than 5MB',
-        type: 'warning',
-      })
-      e.target.value = ''
-      return
-    }
+    // Add new files to existing list
+    setAttachmentFiles(prev => [...prev, ...validFiles])
 
-    setAttachmentFile(file)
+    // Clear the input
+    e.target.value = ''
+  }
 
-    // Convert to base64
-    const reader = new FileReader()
-    reader.onload = () => {
-      const base64 = reader.result.split(',')[1]
-      setAttachmentBase64(base64)
-    }
-    reader.readAsDataURL(file)
+  const handleRemoveFile = index => {
+    setAttachmentFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSendInvite = async () => {
@@ -364,11 +370,32 @@ function CalendarInvites() {
         timezone,
       }
 
-      // Add attachment if present
-      if (attachmentFile && attachmentBase64) {
-        calendarInviteBody.attachment = {
-          name: attachmentFile.name,
-          fileBase64: attachmentBase64,
+      // Convert attachments to base64 if present
+      if (attachmentFiles.length > 0) {
+        const base64Promises = attachmentFiles.map(file => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              const base64 = reader.result.split(',')[1]
+              resolve({ name: file.name, fileBase64: base64 })
+            }
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+          })
+        })
+
+        try {
+          const attachmentBase64List = await Promise.all(base64Promises)
+          calendarInviteBody.attachments = attachmentBase64List
+        } catch (error) {
+          console.error('Error converting files to base64:', error)
+          showAlert({
+            title: 'Error',
+            message: 'Failed to process attachment files',
+            type: 'danger',
+          })
+          setSending(false)
+          return
         }
       }
 
@@ -384,7 +411,7 @@ function CalendarInvites() {
             startTime: new Date(startTime).toISOString(),
             endTime: new Date(endTime).toISOString(),
             timezone,
-            attachmentName: attachmentFile?.name,
+            attachmentName: attachmentFiles.map(f => f.name).join(', '),
           },
           selectedTemplate
         )
@@ -407,8 +434,7 @@ function CalendarInvites() {
       setTime12h('02:00 PM')
       setDurationInMinutes('60')
       setParameterValues({})
-      setAttachmentFile(null)
-      setAttachmentBase64('')
+      setAttachmentFiles([])
       setRecipientError('')
       setCcError('')
       // Reload timezone from settings
@@ -634,21 +660,43 @@ function CalendarInvites() {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label">Attachment (Optional)</label>
+                    <label className="form-label">Attachments (Optional)</label>
                     <input
                       type="file"
                       className="form-control"
                       accept=".pdf"
                       onChange={handleFileChange}
+                      multiple
                     />
                     <div className="form-text">
-                      PDF files only, max 5MB
-                      {attachmentFile && (
-                        <span className="text-success ms-2">
-                          ✓ {attachmentFile.name} ({(attachmentFile.size / 1024).toFixed(0)} KB)
-                        </span>
-                      )}
+                      PDF files only, max 5MB per file. Multiple files allowed.
                     </div>
+
+                    {attachmentFiles.length > 0 && (
+                      <div className="mt-2">
+                        <label className="form-label fw-bold small">Attached files:</label>
+                        <ul className="list-group">
+                          {attachmentFiles.map((file, index) => (
+                            <li
+                              key={index}
+                              className="list-group-item d-flex justify-content-between align-items-center py-2"
+                            >
+                              <span className="text-success">
+                                ✓ {file.name} ({(file.size / 1024).toFixed(0)} KB)
+                              </span>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleRemoveFile(index)}
+                                title="Remove file"
+                              >
+                                ✕
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                   {signature && signature.trim() !== '' && (

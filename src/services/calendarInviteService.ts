@@ -9,8 +9,12 @@ import timezones from '../utils/timezones.json'
 //   startTime: '2025-12-08T16:00:00',
 //   endTime: '2025-12-08T17:00:00',
 //   timezone: 'Bangladesh Standard Time',
-//   attachmentName: '',
-//   attachment: '',
+//   attachments: [
+//     {
+//       name: '',
+//       fileBase64: '',
+//     },
+//   ],
 // }
 
 export type TimezoneType = (typeof timezones)[number]['windowsTime']
@@ -27,10 +31,10 @@ interface WebhookRequestBase {
 export async function sendCalendarInvite(
   settings: Settings,
   calendarInviteBody: WebhookRequestBase & {
-    attachment?: {
+    attachments?: Array<{
       name: string
       fileBase64: string
-    }
+    }>
   }
 ) {
   if (!settings.calendarWebhook?.url) {
@@ -45,20 +49,25 @@ export async function sendCalendarInvite(
     headers[header.key] = header.value
   }
 
-  const { attachment, ...requestBody } = calendarInviteBody
+  const { attachments, ...requestBody } = calendarInviteBody
 
   const requestWithAttachment: WebhookRequestBase & {
     attachmentName?: string
-    attachment?: string
+    attachments?: Array<{
+      name: string
+      fileBase64: string
+    }>
   } = {
     ...requestBody,
   }
-  if (attachment) {
-    requestWithAttachment.attachmentName = attachment.name
-    requestWithAttachment.attachment = attachment.fileBase64
+
+  if (attachments && attachments.length > 0) {
+    requestWithAttachment.attachments = attachments
   }
 
   await axios.post(settings.calendarWebhook?.url, requestWithAttachment, {
     headers,
   })
 }
+
+// https://default3ec00d79021a42d4aac8dcb35973df.f2.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c4243fff21d34a229040f41f035a10da/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=MwCxgeI3ULYH37ZxdVb2FbBGNrmLxMhGykI-Wb50EJA
