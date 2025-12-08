@@ -29,6 +29,7 @@ function CalendarInvites() {
 
   // Calendar-specific fields
   const [recipient, setRecipient] = useState('')
+  const [cc, setCc] = useState('')
   const [subject, setSubject] = useState('')
   const [date, setDate] = useState('')
   const [time12h, setTime12h] = useState('02:00 PM')
@@ -43,9 +44,12 @@ function CalendarInvites() {
   // Preview and validation
   const [htmlBody, setHtmlBody] = useState('')
   const [recipientError, setRecipientError] = useState('')
+  const [ccError, setCcError] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [webhookConfigured, setWebhookConfigured] = useState(false)
+  const [signature, setSignature] = useState('')
+  const [appendSignature, setAppendSignature] = useState(false)
 
   const loadTemplates = useCallback(async () => {
     setLoading(true)
@@ -76,6 +80,12 @@ function CalendarInvites() {
       // Load default timezone from settings (fallback to browser timezone)
       const defaultTimezone = settings.defaultTimezone || getBrowserTimezone()
       setTimezone(defaultTimezone)
+
+      // Load signature
+      const sig = settings.signature || ''
+      setSignature(sig)
+      // Set appendSignature to true by default if signature exists
+      setAppendSignature(sig.trim() !== '')
     } catch (error) {
       console.error('Error loading settings:', error)
       setWebhookConfigured(false)
@@ -88,12 +98,16 @@ function CalendarInvites() {
     loadSettings()
   }, [loadTemplates, loadSettings])
 
-  // Convert 12-hour time to 24-hour and combine with date
-  const time24h = parse12HourTimeTo24Hour(time12h)
-  const startTime = combineDateAndTime(date, time24h)
+  // Convert 12-hour time to 24-hour and combine with date (memoized to prevent infinite re-renders)
+  const startTime = useMemo(() => {
+    const time24h = parse12HourTimeTo24Hour(time12h)
+    return combineDateAndTime(date, time24h)
+  }, [date, time12h])
 
-  // Calculate end time from start time and duration using utility function
-  const endTime = calculateEndTime(startTime, durationInMinutes)
+  // Calculate end time from start time and duration using utility function (memoized)
+  const endTime = useMemo(() => {
+    return calculateEndTime(startTime, durationInMinutes)
+  }, [startTime, durationInMinutes])
 
   // Update preview when template or parameters change
   useEffect(() => {
@@ -157,6 +171,21 @@ function CalendarInvites() {
       }
     } else {
       setRecipientError('')
+    }
+  }
+
+  const handleCcChange = value => {
+    setCc(value)
+
+    if (value.trim()) {
+      const validation = validateEmailList(value)
+      if (!validation.isValid) {
+        setCcError(`Invalid email(s): ${validation.invalidEmails.join(', ')}`)
+      } else {
+        setCcError('')
+      }
+    } else {
+      setCcError('')
     }
   }
 
@@ -232,6 +261,19 @@ function CalendarInvites() {
       return
     }
 
+    // Validate CC if provided
+    if (cc.trim()) {
+      const ccValidation = validateEmailList(cc)
+      if (!ccValidation.isValid) {
+        showAlert({
+          title: 'Validation Error',
+          message: `Invalid CC email(s): ${ccValidation.invalidEmails.join(', ')}`,
+          type: 'warning',
+        })
+        return
+      }
+    }
+
     // Validate required fields
     if (!subject.trim()) {
       showAlert({
@@ -300,10 +342,23 @@ function CalendarInvites() {
       const settings = await settingsRepository.getSettings()
 
       // Prepare the calendar invite body
+      // Combine recipient and CC emails for the 'to' field
+      const toEmails = [recipient.trim()]
+      if (cc.trim()) {
+        const ccEmails = parseEmailList(cc)
+        toEmails.push(...ccEmails)
+      }
+
+      // Append signature if checkbox is checked and signature exists
+      let finalMessage = htmlBody
+      if (appendSignature && signature && signature.trim() !== '') {
+        finalMessage = htmlBody + '\n' + signature
+      }
+
       const calendarInviteBody = {
         subject,
-        to: recipient.trim(),
-        message: htmlBody,
+        to: toEmails.join(', '),
+        message: finalMessage,
         startTime: new Date(startTime).toISOString(),
         endTime: new Date(endTime).toISOString(),
         timezone,
@@ -346,6 +401,7 @@ function CalendarInvites() {
       // Reset form - reload default timezone from settings
       setSelectedTemplate(null)
       setRecipient('')
+      setCc('')
       setSubject('')
       setDate('')
       setTime12h('02:00 PM')
@@ -354,6 +410,7 @@ function CalendarInvites() {
       setAttachmentFile(null)
       setAttachmentBase64('')
       setRecipientError('')
+      setCcError('')
       // Reload timezone from settings
       loadSettings()
     } catch (error) {
@@ -561,6 +618,22 @@ function CalendarInvites() {
                   </div>
 
                   <div className="mb-3">
+                    <label className="form-label">CC (Optional)</label>
+                    <input
+                      type="text"
+                      className={`form-control ${ccError ? 'is-invalid' : ''}`}
+                      value={cc}
+                      onChange={e => handleCcChange(e.target.value)}
+                      placeholder="user1@example.com, user2@example.com"
+                    />
+                    {ccError ? (
+                      <div className="invalid-feedback">{ccError}</div>
+                    ) : (
+                      <div className="form-text">Enter comma-separated email addresses</div>
+                    )}
+                  </div>
+
+                  <div className="mb-3">
                     <label className="form-label">Attachment (Optional)</label>
                     <input
                       type="file"
@@ -578,10 +651,33 @@ function CalendarInvites() {
                     </div>
                   </div>
 
+                  {signature && signature.trim() !== '' && (
+                    <div className="mb-3">
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="appendSignatureCheckbox"
+                          checked={appendSignature}
+                          onChange={e => setAppendSignature(e.target.checked)}
+                        />
+                        <label className="form-check-label" htmlFor="appendSignatureCheckbox">
+                          Append email signature
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     className="btn btn-primary w-100"
                     onClick={handleSendInvite}
-                    disabled={sending || !recipient.trim() || !subject.trim() || !!recipientError}
+                    disabled={
+                      sending ||
+                      !recipient.trim() ||
+                      !subject.trim() ||
+                      !!recipientError ||
+                      !!ccError
+                    }
                   >
                     {sending ? (
                       <>
@@ -611,43 +707,43 @@ function CalendarInvites() {
                     {subject || <span className="text-muted">No subject</span>}
                   </div>
                 </div>
-
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Date:</label>
-                  <div className="p-2 bg-light rounded border">
-                    {startTime ? (
-                      formatLongDate(startTime)
-                    ) : (
-                      <span className="text-muted">Not set</span>
-                    )}
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-bold">Date:</label>
+                    <div className="p-2 bg-light rounded border">
+                      {startTime ? (
+                        formatLongDate(startTime)
+                      ) : (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-bold">Timezone:</label>
+                    <div className="p-2 bg-light rounded border">{timezone}</div>
                   </div>
                 </div>
-
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Start Time:</label>
-                  <div className="p-2 bg-light rounded border">
-                    {startTime ? (
-                      format12HourTime(startTime)
-                    ) : (
-                      <span className="text-muted">Not set</span>
-                    )}
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-bold">Start Time:</label>
+                    <div className="p-2 bg-light rounded border">
+                      {startTime ? (
+                        format12HourTime(startTime)
+                      ) : (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label fw-bold">End Time:</label>
-                  <div className="p-2 bg-light rounded border">
-                    {endTime ? (
-                      format12HourTime(endTime)
-                    ) : (
-                      <span className="text-muted">Not set</span>
-                    )}
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-bold">End Time:</label>
+                    <div className="p-2 bg-light rounded border">
+                      {endTime ? (
+                        format12HourTime(endTime)
+                      ) : (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Timezone:</label>
-                  <div className="p-2 bg-light rounded border">{timezone}</div>
                 </div>
 
                 <div>
@@ -661,7 +757,13 @@ function CalendarInvites() {
                       wordBreak: 'break-word',
                       whiteSpace: 'pre-wrap',
                     }}
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlBody) }}
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeHtml(
+                        appendSignature && signature && signature.trim() !== ''
+                          ? htmlBody + '\n' + signature
+                          : htmlBody
+                      ),
+                    }}
                   />
                 </div>
               </PageCard>

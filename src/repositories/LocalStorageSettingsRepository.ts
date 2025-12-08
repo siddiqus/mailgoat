@@ -66,6 +66,7 @@ class LocalStorageSettingsRepository {
       pixelTracking: {
         enabled: false, // Enabled by default for backward compatibility
       },
+      signature: '',
     }
   }
 }

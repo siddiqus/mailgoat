@@ -164,4 +164,6 @@ export interface Settings {
     url: string
     headers?: WebhookHeader[]
   }
+  signature?: string
+  defaultTimezone?: string
 }

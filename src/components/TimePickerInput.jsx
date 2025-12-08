@@ -5,20 +5,25 @@ function TimePickerInput({ value, onChange, className = '' }) {
   const [minute, setMinute] = useState('00')
   const [period, setPeriod] = useState('PM')
 
-  // Parse incoming value (e.g., "02:00 PM")
+  // Parse incoming value (e.g., "02:00 PM") - only update if different
   useEffect(() => {
     if (value) {
       const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
       if (match) {
-        setHour(match[1].padStart(2, '0'))
-        setMinute(match[2])
-        setPeriod(match[3].toUpperCase())
+        const newHour = match[1].padStart(2, '0')
+        const newMinute = match[2]
+        const newPeriod = match[3].toUpperCase()
+
+        // Only update state if values are actually different
+        setHour(prevHour => (prevHour !== newHour ? newHour : prevHour))
+        setMinute(prevMinute => (prevMinute !== newMinute ? newMinute : prevMinute))
+        setPeriod(prevPeriod => (prevPeriod !== newPeriod ? newPeriod : prevPeriod))
       }
     }
   }, [value])
 
-  // Memoize onChange callback to prevent infinite loops
-  const handleChange = useCallback(
+  // Notify parent of changes
+  const notifyChange = useCallback(
     (newHour, newMinute, newPeriod) => {
       const timeString = `${newHour}:${newMinute} ${newPeriod}`
       if (onChange) {
@@ -27,11 +32,6 @@ function TimePickerInput({ value, onChange, className = '' }) {
     },
     [onChange]
   )
-
-  // Update parent when any component changes
-  useEffect(() => {
-    handleChange(hour, minute, period)
-  }, [hour, minute, period, handleChange])
 
   // Generate hour options (1-12)
   const hourOptions = Array.from({ length: 12 }, (_, i) => {
@@ -51,7 +51,11 @@ function TimePickerInput({ value, onChange, className = '' }) {
         <select
           className="form-select"
           value={hour}
-          onChange={e => setHour(e.target.value)}
+          onChange={e => {
+            const newHour = e.target.value
+            setHour(newHour)
+            notifyChange(newHour, minute, period)
+          }}
           style={{ width: '70px' }}
           aria-label="Hour"
         >
@@ -69,7 +73,11 @@ function TimePickerInput({ value, onChange, className = '' }) {
         <select
           className="form-select"
           value={minute}
-          onChange={e => setMinute(e.target.value)}
+          onChange={e => {
+            const newMinute = e.target.value
+            setMinute(newMinute)
+            notifyChange(hour, newMinute, period)
+          }}
           style={{ width: '70px' }}
           aria-label="Minute"
         >
@@ -84,7 +92,11 @@ function TimePickerInput({ value, onChange, className = '' }) {
       <select
         className="form-select"
         value={period}
-        onChange={e => setPeriod(e.target.value)}
+        onChange={e => {
+          const newPeriod = e.target.value
+          setPeriod(newPeriod)
+          notifyChange(hour, minute, newPeriod)
+        }}
         style={{ width: '75px' }}
         aria-label="AM/PM"
       >

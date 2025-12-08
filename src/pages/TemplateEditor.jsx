@@ -268,12 +268,6 @@ function TemplateEditor() {
                   <option value="email">Email</option>
                   <option value="calendar">Calendar Invite</option>
                 </select>
-                {!isEditMode && type === 'calendar' && (
-                  <div className="form-text text-info">
-                    Calendar templates will automatically include parameters: date, startTime,
-                    endTime, timezone, durationInMinutes
-                  </div>
-                )}
               </div>
 
               <div className="col-md-8">

@@ -41,6 +41,7 @@ function Settings() {
   // Other settings
   const [pixelTrackingEnabled, setPixelTrackingEnabled] = useState(true)
   const [defaultTimezone, setDefaultTimezone] = useState(getBrowserTimezone())
+  const [signature, setSignature] = useState('')
 
   // Import/Export state
   const [importing, setImporting] = useState(false)
@@ -76,6 +77,7 @@ function Settings() {
       // Load other settings
       setPixelTrackingEnabled(data.pixelTracking?.enabled ?? true)
       setDefaultTimezone(data.defaultTimezone || getBrowserTimezone())
+      setSignature(data.signature || '')
     } catch (error) {
       console.error('Error loading settings:', error)
       showAlert({
@@ -292,6 +294,7 @@ function Settings() {
             enabled: pixelTrackingEnabled,
           },
           defaultTimezone,
+          signature,
         }
 
         await settingsRepository.saveSettings(updatedSettings)
@@ -501,6 +504,7 @@ function Settings() {
             enabled: importedData.pixelTracking?.enabled ?? true,
           },
           defaultTimezone: importedData.defaultTimezone || getBrowserTimezone(),
+          signature: importedData.signature || '',
           createdAt: importedData.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -649,6 +653,8 @@ function Settings() {
               setPixelTrackingEnabled={setPixelTrackingEnabled}
               defaultTimezone={defaultTimezone}
               setDefaultTimezone={setDefaultTimezone}
+              signature={signature}
+              setSignature={setSignature}
               saving={saving}
               handleSave={handleSave}
             />

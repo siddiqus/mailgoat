@@ -184,12 +184,6 @@ function TemplateModal({ show, onHide, onSave, template = null }) {
               {template && (
                 <div className="form-text">Template type cannot be changed after creation</div>
               )}
-              {!template && type === 'calendar' && (
-                <div className="form-text text-info">
-                  Calendar templates will automatically include parameters: date, startTime,
-                  endTime, timezone, durationInMinutes
-                </div>
-              )}
             </div>
 
             <div className="mb-3">

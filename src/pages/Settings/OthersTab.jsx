@@ -1,5 +1,8 @@
 import { useMemo } from 'react'
+import PageCard from '../../components/PageCard'
+import RichTextEditor from '../../components/RichTextEditor'
 import SearchableSelect from '../../components/SearchableSelect'
+import { sanitizeHtml } from '../../utils/sanitizer'
 import { getTimezoneOptions } from '../../utils/timezoneUtils'
 
 function OthersTab({
@@ -7,6 +10,8 @@ function OthersTab({
   setPixelTrackingEnabled,
   defaultTimezone,
   setDefaultTimezone,
+  signature,
+  setSignature,
   saving,
   handleSave,
 }) {
@@ -15,83 +20,69 @@ function OthersTab({
   return (
     <div className="row">
       <div className="col-lg-8">
-        <div className="settings-card">
-          <div className="settings-card-header">
-            <h5 className="mb-0">Other Settings</h5>
+        <PageCard className="mb-4">
+          <label className="form-label">
+            <strong>Default Timezone</strong>
+          </label>
+          <SearchableSelect
+            options={timezoneOptions}
+            value={defaultTimezone}
+            onChange={value => setDefaultTimezone(value)}
+            placeholder="Select default timezone"
+            allowClear={false}
+          />
+          <div className="form-text mt-2">
+            This timezone will be used by default when creating calendar invites. You can change it
+            for individual invites.
           </div>
-          <div className="settings-card-body">
-            <div className="mb-4">
-              <label className="form-label">
-                <strong>Default Timezone</strong>
-              </label>
-              <SearchableSelect
-                options={timezoneOptions}
-                value={defaultTimezone}
-                onChange={value => setDefaultTimezone(value)}
-                placeholder="Select default timezone"
-                allowClear={false}
-              />
-              <div className="form-text mt-2">
-                This timezone will be used by default when creating calendar invites. You can change
-                it for individual invites.
-              </div>
-            </div>
-            <hr />
-            <div className="mb-4">
-              <div className="form-check form-switch">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  role="switch"
-                  id="pixelTrackingToggle"
-                  checked={pixelTrackingEnabled}
-                  onChange={e => setPixelTrackingEnabled(e.target.checked)}
-                />
-                <label className="form-check-label" htmlFor="pixelTrackingToggle">
-                  <strong>Enable Pixel Tracking</strong>
-                </label>
-              </div>
-              <div className="form-text mt-2">
-                When enabled, a tracking pixel will be automatically added to all outgoing emails to
-                track open events. Requires Supabase configuration.
-              </div>
-            </div>
-
-            <div className="alert alert-info">
-              <strong>About Pixel Tracking:</strong>
-              <ul className="mb-0 mt-2">
-                <li>
-                  A 1x1 transparent pixel is added to the end of each email&apos;s HTML content
-                </li>
-                <li>
-                  When recipients open the email, the pixel sends a request to track the open event
-                </li>
-                <li>Tracking data is stored in Supabase and displayed in the Analytics page</li>
-                <li>
-                  If disabled, no tracking pixel will be added to emails, and open events will not
-                  be tracked
-                </li>
-              </ul>
-            </div>
-
-            {/* Action Button */}
-            <div className="d-flex gap-2">
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                    Saving...
-                  </>
-                ) : (
-                  'Save Settings'
-                )}
-              </button>
-            </div>
+        </PageCard>
+        <PageCard className="mb-4">
+          <div className="form-check form-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              role="switch"
+              id="pixelTrackingToggle"
+              checked={pixelTrackingEnabled}
+              onChange={e => setPixelTrackingEnabled(e.target.checked)}
+            />
+            <label className="form-check-label" htmlFor="pixelTrackingToggle">
+              <strong>Enable Pixel Tracking</strong>
+            </label>
           </div>
+          <div className="form-text mt-2">
+            When enabled, a tracking pixel will be automatically added to all outgoing emails to
+            track open events. Requires Supabase configuration.
+          </div>
+        </PageCard>
+
+        <PageCard className="mb-4">
+          <label className="form-label">
+            <strong>Email Signature</strong>
+          </label>
+          <RichTextEditor value={signature} onChange={setSignature} />
+          <div className="form-text mt-2">
+            This signature can be optionally appended to your emails and calendar invitations.
+            You&apos;ll have the option to include it when sending.
+          </div>
+        </PageCard>
+
+        {/* Save Button */}
+        <div className="d-flex gap-2">
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Saving...
+              </>
+            ) : (
+              'Save Settings'
+            )}
+          </button>
         </div>
       </div>
 
@@ -116,6 +107,28 @@ function OthersTab({
                   <span className="badge bg-success">Enabled</span>
                 ) : (
                   <span className="badge bg-secondary">Disabled</span>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <strong className="small">Signature:</strong>
+              <div className="mt-1">
+                {signature && signature.trim() ? (
+                  <>
+                    <span className="badge bg-success mb-2">Configured</span>
+                    <div
+                      className="border rounded p-2 bg-white"
+                      style={{
+                        maxHeight: '150px',
+                        overflow: 'auto',
+                        fontSize: '0.85rem',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(signature) }}
+                    />
+                  </>
+                ) : (
+                  <span className="badge bg-secondary">Not configured</span>
                 )}
               </div>
             </div>

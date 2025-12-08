@@ -56,6 +56,8 @@ function SendEmail() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [webhookConfigured, setWebhookConfigured] = useState(false)
+  const [signature, setSignature] = useState('')
+  const [appendSignature, setAppendSignature] = useState(false)
 
   // Load templates, campaigns, and settings on mount
   useEffect(() => {
@@ -95,6 +97,12 @@ function SendEmail() {
       const settings = await settingsRepository.getSettings()
       const isConfigured = settings.webhook?.url && settings.webhook.url.trim() !== ''
       setWebhookConfigured(isConfigured)
+
+      // Load signature
+      const sig = settings.signature || ''
+      setSignature(sig)
+      // Set appendSignature to true by default if signature exists
+      setAppendSignature(sig.trim() !== '')
     } catch (error) {
       console.error('Error loading settings:', error)
       setWebhookConfigured(false)
@@ -250,11 +258,17 @@ function SendEmail() {
       const recipientList = parseEmailList(recipients)
       const ccListArray = parseEmailList(ccList)
 
+      // Append signature if checkbox is checked and signature exists
+      let finalHtmlBody = htmlBody
+      if (appendSignature && signature && signature.trim() !== '') {
+        finalHtmlBody = htmlBody + '\n' + signature
+      }
+
       const emailData = {
         recipients: recipientList,
         ccList: ccListArray,
         subject,
-        htmlBody,
+        htmlBody: finalHtmlBody,
         campaignId: selectedCampaign,
       }
 
@@ -698,6 +712,23 @@ function SendEmail() {
                       )}
                     </div>
 
+                    {signature && signature.trim() !== '' && (
+                      <div className="mb-3">
+                        <div className="form-check">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="appendSignatureCheckbox"
+                            checked={appendSignature}
+                            onChange={e => setAppendSignature(e.target.checked)}
+                          />
+                          <label className="form-check-label" htmlFor="appendSignatureCheckbox">
+                            Append email signature
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
                     <button
                       className="btn btn-primary w-100"
                       onClick={handleSendEmail}
@@ -747,7 +778,13 @@ function SendEmail() {
                           wordBreak: 'break-word',
                           whiteSpace: 'pre-wrap',
                         }}
-                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlBody) }}
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHtml(
+                            appendSignature && signature && signature.trim() !== ''
+                              ? htmlBody + '\n' + signature
+                              : htmlBody
+                          ),
+                        }}
                       />
                     </div>
                   </PageCard>
