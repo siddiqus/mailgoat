@@ -31,6 +31,12 @@ function History() {
   const [selectedCampaignFilter, setSelectedCampaignFilter] = useState('all')
   const [selectedTemplateFilter, setSelectedTemplateFilter] = useState('all')
   const [selectedCalendarTemplateFilter, setSelectedCalendarTemplateFilter] = useState('all')
+  const [emailPage, setEmailPage] = useState(1)
+
+  const [currentTab, setCurrentTab] = useState('emails')
+
+  const [calendarPage, setCalendarPage] = useState(1)
+  const itemsPerPage = 10
 
   // Initialize filters from URL query parameters
   useEffect(() => {
@@ -99,7 +105,7 @@ function History() {
 
   const handleClearHistory = async () => {
     const confirmed = await showConfirm({
-      title: 'Clear Email History',
+      title: `Clear ${currentTab} History`,
       message: 'Are you sure you want to clear all email history? This action cannot be undone.',
       type: 'danger',
       confirmText: 'Clear History',
@@ -110,51 +116,23 @@ function History() {
 
     setLoading(true)
     try {
-      await clearAllHistory()
-      setHistory([])
+      if (currentTab === 'emails') {
+        await clearAllHistory()
+        setHistory([])
+      } else {
+        await clearAllCalendarInviteHistory()
+        setCalendarHistory([])
+      }
       showAlert({
         title: 'Success',
-        message: 'Email history cleared successfully!',
+        message: `${currentTab === 'emails' ? 'Email' : 'Calendar'} invite history cleared successfully!`,
         type: 'success',
       })
     } catch (error) {
-      console.error('Error clearing email history:', error)
+      console.error(`Error clearing ${currentTab} history:`, error)
       showAlert({
         title: 'Error',
-        message: 'Failed to clear email history',
-        type: 'danger',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleClearCalendarHistory = async () => {
-    const confirmed = await showConfirm({
-      title: 'Clear Calendar Invite History',
-      message:
-        'Are you sure you want to clear all calendar invite history? This action cannot be undone.',
-      type: 'danger',
-      confirmText: 'Clear History',
-      cancelText: 'Cancel',
-    })
-
-    if (!confirmed) return
-
-    setLoading(true)
-    try {
-      await clearAllCalendarInviteHistory()
-      setCalendarHistory([])
-      showAlert({
-        title: 'Success',
-        message: 'Calendar invite history cleared successfully!',
-        type: 'success',
-      })
-    } catch (error) {
-      console.error('Error clearing calendar invite history:', error)
-      showAlert({
-        title: 'Error',
-        message: 'Failed to clear calendar invite history',
+        message: `Failed to clear ${currentTab} history`,
         type: 'danger',
       })
     } finally {
@@ -231,6 +209,7 @@ function History() {
   // Update URL when filters change
   const handleCampaignFilterChange = value => {
     setSelectedCampaignFilter(value)
+    setEmailPage(1) // Reset to first page when filter changes
     const params = new URLSearchParams(searchParams)
     if (value === 'all') {
       params.delete('campaign')
@@ -242,6 +221,7 @@ function History() {
 
   const handleTemplateFilterChange = value => {
     setSelectedTemplateFilter(value)
+    setEmailPage(1) // Reset to first page when filter changes
     const params = new URLSearchParams(searchParams)
     if (value === 'all') {
       params.delete('template')
@@ -254,6 +234,7 @@ function History() {
   const handleClearFilters = () => {
     setSelectedCampaignFilter('all')
     setSelectedTemplateFilter('all')
+    setEmailPage(1) // Reset to first page
     setSearchParams({})
   }
 
@@ -329,6 +310,90 @@ function History() {
     return filtered
   }, [calendarHistory, selectedCalendarTemplateFilter])
 
+  // Paginate email history
+  const paginatedEmailHistory = useMemo(() => {
+    const startIndex = (emailPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredHistory.slice(startIndex, endIndex)
+  }, [filteredHistory, emailPage, itemsPerPage])
+
+  // Paginate calendar history
+  const paginatedCalendarHistory = useMemo(() => {
+    const startIndex = (calendarPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredCalendarHistory.slice(startIndex, endIndex)
+  }, [filteredCalendarHistory, calendarPage, itemsPerPage])
+
+  // Calculate total pages
+  const totalEmailPages = Math.ceil(filteredHistory.length / itemsPerPage)
+  const totalCalendarPages = Math.ceil(filteredCalendarHistory.length / itemsPerPage)
+
+  // Pagination control component
+  const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+    if (totalPages <= 1) return null
+
+    const getPageNumbers = () => {
+      const pages = []
+      const maxPagesToShow = 5
+
+      if (totalPages <= maxPagesToShow) {
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i)
+        }
+      } else {
+        if (currentPage <= 3) {
+          pages.push(1, 2, 3, 4, '...', totalPages)
+        } else if (currentPage >= totalPages - 2) {
+          pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+        } else {
+          pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages)
+        }
+      }
+
+      return pages
+    }
+
+    return (
+      <nav aria-label="Page navigation" className="mt-3">
+        <ul className="pagination justify-content-center mb-0">
+          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+            <button
+              className="page-link"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+          </li>
+
+          {getPageNumbers().map((page, index) =>
+            page === '...' ? (
+              <li key={`ellipsis-${index}`} className="page-item disabled">
+                <span className="page-link">...</span>
+              </li>
+            ) : (
+              <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                <button className="page-link" onClick={() => onPageChange(page)}>
+                  {page}
+                </button>
+              </li>
+            )
+          )}
+
+          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+            <button
+              className="page-link"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </li>
+        </ul>
+      </nav>
+    )
+  }
+
   if (loading) {
     return (
       <PageContainer>
@@ -343,67 +408,68 @@ function History() {
 
   return (
     <PageContainer>
-      <h2 className="mb-4">History</h2>
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <h2>History</h2>
+        <div className="d-flex justify-content-end align-items-center mb-3 gap-2">
+          <button
+            className="btn btn-outline-danger"
+            onClick={handleClearHistory}
+            disabled={loading || refreshing || history.length === 0}
+            title="Clear all email history"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              className="bi bi-trash me-2"
+              viewBox="0 0 16 16"
+            >
+              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+              <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
+            </svg>
+            Clear History
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="Refresh email history"
+          >
+            {refreshing ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  className="bi bi-arrow-clockwise me-2"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
+                  />
+                  <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                </svg>
+                Refresh
+              </>
+            )}
+          </button>
+        </div>
+      </div>
 
-      <Tabs defaultTab="emails">
+      <Tabs defaultTab="emails" onChange={tab => setCurrentTab(tab)}>
         <Tabs.Tab value="emails" label="Emails">
-          <div className="d-flex justify-content-end align-items-center mb-3 gap-2">
-            <button
-              className="btn btn-outline-danger"
-              onClick={handleClearHistory}
-              disabled={loading || refreshing || history.length === 0}
-              title="Clear all email history"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="currentColor"
-                className="bi bi-trash me-2"
-                viewBox="0 0 16 16"
-              >
-                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
-                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
-              </svg>
-              Clear History
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              title="Refresh email history"
-            >
-              {refreshing ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
-                    className="bi bi-arrow-clockwise me-2"
-                    viewBox="0 0 16 16"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
-                    />
-                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
-                  </svg>
-                  Refresh
-                </>
-              )}
-            </button>
-          </div>
-
           {history.length === 0 ? (
             <div className="alert alert-info">
               No emails sent yet. Sent emails will appear here in your history.
@@ -471,7 +537,7 @@ function History() {
               </PageCard>
 
               <PageCard className="p-0">
-                <div className="table-responsive">
+                <div className="table-responsive" style={{ height: '400px' }}>
                   <table className="table table-hover mb-0">
                     <thead>
                       <tr>
@@ -486,7 +552,7 @@ function History() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredHistory.map(record => (
+                      {paginatedEmailHistory.map(record => (
                         <tr key={record.id}>
                           <td className="align-middle">
                             <small>{new Date(record.sentAt).toLocaleString()}</small>
@@ -566,10 +632,20 @@ function History() {
                 </div>
               </PageCard>
 
+              <Pagination
+                currentPage={emailPage}
+                totalPages={totalEmailPages}
+                onPageChange={setEmailPage}
+              />
+
               <div className="text-muted mt-2">
                 <small>
-                  Showing {filteredHistory.length} of {history.length} email
-                  {history.length !== 1 ? 's' : ''}{' '}
+                  Showing{' '}
+                  {paginatedEmailHistory.length === 0 ? 0 : (emailPage - 1) * itemsPerPage + 1}
+                  {paginatedEmailHistory.length > 0 &&
+                    ` - ${Math.min(emailPage * itemsPerPage, filteredHistory.length)}`}{' '}
+                  of {filteredHistory.length} filtered email
+                  {filteredHistory.length !== 1 ? 's' : ''} ({history.length} total)
                 </small>
               </div>
             </div>
@@ -577,63 +653,6 @@ function History() {
         </Tabs.Tab>
 
         <Tabs.Tab value="calendar" label="Calendar Invites">
-          <div className="d-flex justify-content-end align-items-center mb-3 gap-2">
-            <button
-              className="btn btn-outline-danger"
-              onClick={handleClearCalendarHistory}
-              disabled={loading || refreshing || calendarHistory.length === 0}
-              title="Clear all calendar invite history"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="currentColor"
-                className="bi bi-trash me-2"
-                viewBox="0 0 16 16"
-              >
-                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
-                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
-              </svg>
-              Clear History
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              title="Refresh calendar invite history"
-            >
-              {refreshing ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
-                    className="bi bi-arrow-clockwise me-2"
-                    viewBox="0 0 16 16"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
-                    />
-                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
-                  </svg>
-                  Refresh
-                </>
-              )}
-            </button>
-          </div>
-
           {calendarHistory.length === 0 ? (
             <div className="alert alert-info">
               No calendar invites sent yet. Sent calendar invites will appear here in your history.
@@ -649,7 +668,10 @@ function History() {
                       label="Filter by Template:"
                       options={calendarTemplateOptions}
                       value={selectedCalendarTemplateFilter}
-                      onChange={setSelectedCalendarTemplateFilter}
+                      onChange={value => {
+                        setSelectedCalendarTemplateFilter(value)
+                        setCalendarPage(1) // Reset to first page when filter changes
+                      }}
                       placeholder="Select a template..."
                       allowClear={true}
                     />
@@ -661,7 +683,10 @@ function History() {
                   <div className="mt-3">
                     <button
                       className="btn btn-sm btn-outline-secondary"
-                      onClick={() => setSelectedCalendarTemplateFilter('all')}
+                      onClick={() => {
+                        setSelectedCalendarTemplateFilter('all')
+                        setCalendarPage(1) // Reset to first page
+                      }}
                     >
                       Clear Filter
                     </button>
@@ -670,22 +695,21 @@ function History() {
               </PageCard>
 
               <PageCard className="p-0">
-                <div className="table-responsive">
+                <div className="table-responsive" style={{ height: '400px' }}>
                   <table className="table table-hover mb-0">
                     <thead>
                       <tr>
                         <th style={{ width: '12%' }}>Sent At</th>
                         <th style={{ width: '12%' }}>Template</th>
                         <th style={{ width: '18%' }}>Recipient</th>
-                        <th style={{ width: '20%' }}>Subject</th>
-                        <th style={{ width: '12%' }}>Start Time</th>
-                        <th style={{ width: '12%' }}>End Time</th>
+                        <th style={{ width: '29%' }}>Subject</th>
+                        <th style={{ width: '15%' }}>Time</th>
                         <th style={{ width: '8%' }}>Timezone</th>
                         <th style={{ width: '6%' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredCalendarHistory.map(record => (
+                      {paginatedCalendarHistory.map(record => (
                         <tr key={record.id}>
                           <td className="align-middle">
                             <small>{new Date(record.sentAt).toLocaleString()}</small>
@@ -710,10 +734,11 @@ function History() {
                             <small>{record.subject}</small>
                           </td>
                           <td className="align-middle">
-                            <small>{new Date(record.startTime).toLocaleString()}</small>
-                          </td>
-                          <td className="align-middle">
-                            <small>{new Date(record.endTime).toLocaleString()}</small>
+                            <div>Date: {record.startTime.split('T')[0]}</div>
+                            <div>
+                              From: {new Date(record.startTime).toLocaleString().split(',')[1]}
+                            </div>
+                            <div>To: {new Date(record.endTime).toLocaleString().split(',')[1]}</div>
                           </td>
                           <td className="align-middle">
                             <small>{record.timezone}</small>
@@ -734,11 +759,22 @@ function History() {
                 </div>
               </PageCard>
 
+              <Pagination
+                currentPage={calendarPage}
+                totalPages={totalCalendarPages}
+                onPageChange={setCalendarPage}
+              />
+
               <div className="text-muted mt-2">
                 <small>
-                  Showing {filteredCalendarHistory.length} of {calendarHistory.length} calendar
-                  invite
-                  {calendarHistory.length !== 1 ? 's' : ''}{' '}
+                  Showing{' '}
+                  {paginatedCalendarHistory.length === 0
+                    ? 0
+                    : (calendarPage - 1) * itemsPerPage + 1}
+                  {paginatedCalendarHistory.length > 0 &&
+                    ` - ${Math.min(calendarPage * itemsPerPage, filteredCalendarHistory.length)}`}{' '}
+                  of {filteredCalendarHistory.length} filtered calendar invite
+                  {filteredCalendarHistory.length !== 1 ? 's' : ''} ({calendarHistory.length} total)
                 </small>
               </div>
             </div>
