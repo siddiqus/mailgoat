@@ -31,7 +31,7 @@ interface WebhookRequestBase {
 export async function sendCalendarInvite(
   settings: Settings,
   calendarInviteBody: WebhookRequestBase & {
-    attachments?: Array<{
+    attachedFiles?: Array<{
       name: string
       fileBase64: string
     }>
@@ -49,11 +49,11 @@ export async function sendCalendarInvite(
     headers[header.key] = header.value
   }
 
-  const { attachments, ...requestBody } = calendarInviteBody
+  const { attachedFiles, ...requestBody } = calendarInviteBody
 
   const requestWithAttachment: WebhookRequestBase & {
     attachmentName?: string
-    attachments?: Array<{
+    attachedFiles?: Array<{
       name: string
       fileBase64: string
     }>
@@ -61,9 +61,7 @@ export async function sendCalendarInvite(
     ...requestBody,
   }
 
-  if (attachments && attachments.length > 0) {
-    requestWithAttachment.attachments = attachments
-  }
+  requestWithAttachment.attachedFiles = attachedFiles ?? []
 
   await axios.post(settings.calendarWebhook?.url, requestWithAttachment, {
     headers,

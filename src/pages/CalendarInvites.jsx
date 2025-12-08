@@ -386,7 +386,7 @@ function CalendarInvites() {
 
         try {
           const attachmentBase64List = await Promise.all(base64Promises)
-          calendarInviteBody.attachments = attachmentBase64List
+          calendarInviteBody.attachedFiles = attachmentBase64List
         } catch (error) {
           console.error('Error converting files to base64:', error)
           showAlert({
