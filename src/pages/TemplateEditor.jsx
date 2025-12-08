@@ -237,7 +237,7 @@ function TemplateEditor() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer className="pb-0">
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>{isEditMode ? 'Edit Template' : 'Create Template'}</h2>
@@ -343,7 +343,7 @@ function TemplateEditor() {
         </div>
       </div>
 
-      <PageCard className="mb-4">
+      <PageCard>
         <div className="mb-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <label htmlFor="htmlString" className="form-label mb-0">
@@ -377,8 +377,7 @@ function TemplateEditor() {
                 <div
                   className="border rounded p-3 bg-white"
                   style={{
-                    minHeight: '400px',
-                    maxHeight: '400px',
+                    height: '400px',
                     overflow: 'auto',
                     wordBreak: 'break-word',
                   }}

@@ -742,8 +742,7 @@ function SendEmail() {
                       <div
                         className="border rounded p-3 bg-white"
                         style={{
-                          minHeight: '300px',
-                          maxHeight: '500px',
+                          height: '320px',
                           overflow: 'auto',
                           wordBreak: 'break-word',
                           whiteSpace: 'pre-wrap',
