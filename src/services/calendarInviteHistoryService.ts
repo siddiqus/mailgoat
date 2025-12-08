@@ -9,6 +9,7 @@ const STORAGE_KEY = 'MailGoat_calendarInviteHistory'
 export const saveCalendarInviteToHistory = async (
   inviteData: {
     recipient: string
+    cc?: string
     subject: string
     message: string
     startTime: string
@@ -24,6 +25,7 @@ export const saveCalendarInviteToHistory = async (
     templateId: template.id,
     template,
     recipient: inviteData.recipient,
+    cc: inviteData.cc,
     subject: inviteData.subject,
     message: inviteData.message,
     startTime: inviteData.startTime,

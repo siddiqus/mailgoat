@@ -69,6 +69,7 @@ export interface CalendarInviteHistoryRecord {
   templateId: string
   template: Template
   recipient: string
+  cc?: string
   subject: string
   message: string
   startTime: string

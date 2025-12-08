@@ -37,6 +37,13 @@ function CalendarInviteDetailModal({ inviteRecord, onClose }) {
                 <div className="p-2 bg-light rounded border">{inviteRecord.recipient}</div>
               </div>
 
+              {inviteRecord.cc && inviteRecord.cc.trim() && (
+                <div className="mb-3">
+                  <label className="form-label fw-bold">CC:</label>
+                  <div className="p-2 bg-light rounded border">{inviteRecord.cc}</div>
+                </div>
+              )}
+
               <div className="mb-3">
                 <label className="form-label fw-bold">Subject:</label>
                 <div className="p-2 bg-light rounded border">{inviteRecord.subject}</div>

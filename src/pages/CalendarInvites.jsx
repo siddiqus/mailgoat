@@ -406,6 +406,7 @@ function CalendarInvites() {
         await saveCalendarInviteToHistory(
           {
             recipient: recipient.trim(),
+            cc: cc.trim() || undefined,
             subject,
             message: htmlBody,
             startTime: new Date(startTime).toISOString(),
@@ -542,12 +543,25 @@ function CalendarInvites() {
                     <label className="form-label">
                       Date <span className="text-danger">*</span>
                     </label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={date}
-                      onChange={e => setDate(e.target.value)}
-                    />
+                    <div className="position-relative">
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={date && startTime ? formatLongDate(startTime) : ''}
+                        placeholder="Select a date"
+                        readOnly
+                        onClick={() => document.getElementById('hiddenDateInput').showPicker()}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      <input
+                        id="hiddenDateInput"
+                        type="date"
+                        className="position-absolute"
+                        style={{ opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   <div className="mb-3">
@@ -755,6 +769,18 @@ function CalendarInvites() {
                     {subject || <span className="text-muted">No subject</span>}
                   </div>
                 </div>
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Recipient:</label>
+                  <div className="p-2 bg-light rounded border">
+                    {recipient || <span className="text-muted">Not set</span>}
+                  </div>
+                </div>
+                {cc && cc.trim() && (
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">CC:</label>
+                    <div className="p-2 bg-light rounded border">{cc}</div>
+                  </div>
+                )}
                 <div className="row">
                   <div className="col-md-6 mb-3">
                     <label className="form-label fw-bold">Date:</label>
