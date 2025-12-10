@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageCard from '../components/PageCard'
 import PageContainer from '../components/PageContainer'
@@ -13,6 +13,8 @@ import { sanitizeHtml } from '../utils/sanitizer'
 import { validateHTML, extractParameters } from '../utils/templateValidator'
 
 const CALENDAR_PREDEFINED_PARAMS = ['date', 'startTime', 'endTime', 'timezone', 'durationInMinutes']
+const DRAFT_STORAGE_KEY = 'template_editor_draft'
+const AUTO_SAVE_DELAY = 2000 // Auto-save after 2 seconds of inactivity
 
 function TemplateEditor() {
   const navigate = useNavigate()
@@ -33,6 +35,52 @@ function TemplateEditor() {
   const [showPreview, setShowPreview] = useState(false)
   const [loading, setLoading] = useState(true)
   const [templates, setTemplates] = useState([])
+  const [lastSaved, setLastSaved] = useState(null)
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
+  const autoSaveTimerRef = useRef(null)
+
+  // Save draft to localStorage
+  const saveDraft = useCallback(() => {
+    if (!isEditMode) {
+      const draft = {
+        name,
+        type,
+        subject,
+        htmlString,
+        savedAt: new Date().toISOString(),
+      }
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
+      setLastSaved(new Date())
+      setIsSavingDraft(false)
+    }
+  }, [name, type, subject, htmlString, isEditMode])
+
+  // Load draft from localStorage
+  const loadDraft = useCallback(() => {
+    if (!isEditMode) {
+      const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY)
+      if (draftJson) {
+        try {
+          const draft = JSON.parse(draftJson)
+          setName(draft.name || '')
+          setType(draft.type || 'email')
+          setSubject(draft.subject || '')
+          setHtmlString(draft.htmlString || '')
+          setLastSaved(new Date(draft.savedAt))
+          return true
+        } catch (error) {
+          console.error('Error loading draft:', error)
+        }
+      }
+    }
+    return false
+  }, [isEditMode])
+
+  // Clear draft from localStorage
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY)
+    setLastSaved(null)
+  }, [])
 
   // Load template data and existing templates on mount
   useEffect(() => {
@@ -57,6 +105,16 @@ function TemplateEditor() {
             })
             navigate('/templates')
           }
+        } else {
+          // Load draft for new templates
+          const hasDraft = loadDraft()
+          if (hasDraft) {
+            showAlert({
+              title: 'Draft Loaded',
+              message: 'Your unsaved template draft has been restored.',
+              type: 'info',
+            })
+          }
         }
       } catch (error) {
         console.error('Error loading templates:', error)
@@ -72,7 +130,32 @@ function TemplateEditor() {
     }
 
     loadData()
-  }, [id, isEditMode, navigate, showAlert])
+  }, [id, isEditMode, navigate, showAlert, loadDraft])
+
+  // Auto-save draft when fields change (debounced)
+  useEffect(() => {
+    if (!isEditMode && !loading) {
+      // Clear any existing timer
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+
+      // Set saving indicator
+      setIsSavingDraft(true)
+
+      // Set new timer
+      autoSaveTimerRef.current = setTimeout(() => {
+        saveDraft()
+      }, AUTO_SAVE_DELAY)
+
+      // Cleanup
+      return () => {
+        if (autoSaveTimerRef.current) {
+          clearTimeout(autoSaveTimerRef.current)
+        }
+      }
+    }
+  }, [name, type, subject, htmlString, isEditMode, loading, saveDraft])
 
   // Validate and extract parameters whenever HTML string, subject, or type changes
   useEffect(() => {
@@ -193,6 +276,8 @@ function TemplateEditor() {
         })
       } else {
         await createTemplate(templateData)
+        // Clear draft after successful creation
+        clearDraft()
         showAlert({
           title: 'Success',
           message: 'Template created successfully',
@@ -240,7 +325,38 @@ function TemplateEditor() {
     <PageContainer className="pb-0">
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>{isEditMode ? 'Edit Template' : 'Create Template'}</h2>
+        <div>
+          <h2>{isEditMode ? 'Edit Template' : 'Create Template'}</h2>
+          {!isEditMode && lastSaved && (
+            <small className="text-muted">
+              {isSavingDraft ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-1"
+                    role="status"
+                    style={{ width: '0.8rem', height: '0.8rem' }}
+                  ></span>
+                  Saving draft...
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    fill="currentColor"
+                    className="bi bi-check-circle-fill me-1"
+                    viewBox="0 0 16 16"
+                    style={{ marginBottom: '2px' }}
+                  >
+                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                  </svg>
+                  Draft saved at {lastSaved.toLocaleTimeString()}
+                </>
+              )}
+            </small>
+          )}
+        </div>
         <div className="d-flex gap-2">
           <button className="btn btn-secondary" onClick={handleCancel}>
             Cancel
