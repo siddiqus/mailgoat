@@ -7,6 +7,7 @@ import Tabs from '../components/ui/Tabs'
 import { useAlert } from '../contexts/AlertContext'
 import LocalStorageSettingsRepository from '../repositories/LocalStorageSettingsRepository'
 import { getAllCampaigns } from '../services/campaignService'
+import { saveDraft, loadDraft, clearDraft, hasDraft, DRAFT_KEYS } from '../services/draftService'
 import { saveToHistory } from '../services/emailHistoryService'
 import {
   prepareBulkEmailData,
@@ -59,12 +60,155 @@ function SendEmail() {
   const [signature, setSignature] = useState('')
   const [appendSignature, setAppendSignature] = useState(false)
 
+  // Draft state
+  const [currentTab, setCurrentTab] = useState('single')
+  const [draftLoaded, setDraftLoaded] = useState(false)
+
   // Load templates, campaigns, and settings on mount
   useEffect(() => {
     loadTemplates()
     loadCampaigns()
     loadSettings()
   }, [])
+
+  // Load draft after templates are loaded
+  useEffect(() => {
+    if (!loading && templates.length > 0 && !draftLoaded) {
+      loadDraftData()
+      setDraftLoaded(true)
+    }
+  }, [loading, templates, draftLoaded])
+
+  // Auto-save single email draft
+  useEffect(() => {
+    if (draftLoaded && currentTab === 'single') {
+      const draftData = {
+        templateId: selectedTemplate?.id,
+        campaignId: selectedCampaign,
+        parameterValues,
+        recipients,
+        ccList,
+        appendSignature,
+      }
+      // Only save if there's some data
+      if (selectedTemplate || recipients || ccList || Object.keys(parameterValues).length > 0) {
+        saveDraft(DRAFT_KEYS.SEND_EMAIL_SINGLE, draftData)
+      }
+    }
+  }, [
+    selectedTemplate,
+    selectedCampaign,
+    parameterValues,
+    recipients,
+    ccList,
+    appendSignature,
+    draftLoaded,
+    currentTab,
+  ])
+
+  // Auto-save bulk email draft
+  useEffect(() => {
+    if (draftLoaded && currentTab === 'bulk') {
+      const draftData = {
+        templateId: bulkTemplate?.id,
+        campaignId: selectedCampaign,
+        bulkInputMode,
+        manualEntries,
+        // Note: We can't save file data, only parsed data
+        fileData: bulkInputMode === 'file' ? fileData : [],
+      }
+      // Only save if there's some data
+      if (bulkTemplate || manualEntries.length > 0 || fileData.length > 0) {
+        saveDraft(DRAFT_KEYS.SEND_EMAIL_BULK, draftData)
+      }
+    }
+  }, [
+    bulkTemplate,
+    selectedCampaign,
+    bulkInputMode,
+    manualEntries,
+    fileData,
+    draftLoaded,
+    currentTab,
+  ])
+
+  const loadDraftData = () => {
+    // Load single email draft
+    const singleDraft = loadDraft(DRAFT_KEYS.SEND_EMAIL_SINGLE)
+    if (singleDraft) {
+      if (singleDraft.templateId) {
+        const template = templates.find(t => t.id === singleDraft.templateId)
+        if (template) {
+          setSelectedTemplate(template)
+          const initialValues = {}
+          if (template.parameters) {
+            template.parameters.forEach(param => {
+              initialValues[param] = singleDraft.parameterValues?.[param] || ''
+            })
+          }
+          setParameterValues(initialValues)
+        }
+      }
+      if (singleDraft.campaignId) {
+        setSelectedCampaign(singleDraft.campaignId)
+      }
+      if (singleDraft.recipients) {
+        setRecipients(singleDraft.recipients)
+      }
+      if (singleDraft.ccList) {
+        setCcList(singleDraft.ccList)
+      }
+      if (typeof singleDraft.appendSignature === 'boolean') {
+        setAppendSignature(singleDraft.appendSignature)
+      }
+    }
+
+    // Load bulk email draft
+    const bulkDraft = loadDraft(DRAFT_KEYS.SEND_EMAIL_BULK)
+    if (bulkDraft) {
+      if (bulkDraft.templateId) {
+        const template = templates.find(t => t.id === bulkDraft.templateId)
+        if (template) {
+          setBulkTemplate(template)
+        }
+      }
+      if (bulkDraft.campaignId) {
+        setSelectedCampaign(bulkDraft.campaignId)
+      }
+      if (bulkDraft.bulkInputMode) {
+        setBulkInputMode(bulkDraft.bulkInputMode)
+      }
+      if (bulkDraft.manualEntries && bulkDraft.manualEntries.length > 0) {
+        setManualEntries(bulkDraft.manualEntries)
+      }
+      if (bulkDraft.fileData && bulkDraft.fileData.length > 0) {
+        setFileData(bulkDraft.fileData)
+      }
+    }
+  }
+
+  const clearCurrentDraft = () => {
+    if (currentTab === 'single') {
+      clearDraft(DRAFT_KEYS.SEND_EMAIL_SINGLE)
+      setSelectedTemplate(null)
+      setSelectedCampaign(null)
+      setParameterValues({})
+      setRecipients('')
+      setCcList('')
+      setRecipientsError('')
+      setCcListError('')
+    } else {
+      clearDraft(DRAFT_KEYS.SEND_EMAIL_BULK)
+      setBulkTemplate(null)
+      setSelectedCampaign(null)
+      setUploadedFile(null)
+      setFileData([])
+      setFileErrors([])
+      setPreviewIndex(null)
+      setManualEntries([])
+      setBulkInputMode('file')
+    }
+  }
 
   const loadTemplates = async () => {
     setLoading(true)
@@ -289,6 +433,9 @@ function SendEmail() {
           message: 'Email sent successfully!',
           type: 'success',
         })
+
+        // Clear draft on successful send
+        clearDraft(DRAFT_KEYS.SEND_EMAIL_SINGLE)
 
         setSelectedTemplate(null)
         setSelectedCampaign(null)
@@ -545,6 +692,9 @@ function SendEmail() {
         `Started sending ${emailCount} emails in the background. Redirecting to History page...`
       )
 
+      // Clear draft on successful send
+      clearDraft(DRAFT_KEYS.SEND_EMAIL_BULK)
+
       const queryParams = new URLSearchParams()
       if (bulkTemplate?.id) {
         queryParams.set('template', bulkTemplate.id)
@@ -604,12 +754,35 @@ function SendEmail() {
         </div>
       )}
 
+      {(hasDraft(DRAFT_KEYS.SEND_EMAIL_SINGLE) || hasDraft(DRAFT_KEYS.SEND_EMAIL_BULK)) && (
+        <div className="alert alert-info d-flex align-items-center justify-content-between mb-4">
+          <div className="d-flex align-items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              fill="currentColor"
+              className="me-2"
+              viewBox="0 0 16 16"
+            >
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+            </svg>
+            <span>
+              <strong>Draft saved!</strong> Your progress has been automatically saved.
+            </span>
+          </div>
+          <button className="btn btn-sm btn-outline-secondary" onClick={clearCurrentDraft}>
+            Discard Draft
+          </button>
+        </div>
+      )}
+
       {templates.length === 0 ? (
         <div className="alert alert-info">
           No templates available. Please create a template first in the Templates page.
         </div>
       ) : (
-        <Tabs defaultTab="single">
+        <Tabs defaultTab="single" onTabChange={setCurrentTab}>
           <Tabs.Tab value="single" label="Send Single Email">
             <div className="row">
               {/* Left Column - Configuration */}
