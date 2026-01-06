@@ -174,7 +174,7 @@ export const sendBulkCalendarInvitesAsync = async (
   }
 
   // Send invites asynchronously in the background
-  sendBulkCalendarInvitesInBackground(bulkInviteData, template, historyIds)
+  sendBulkCalendarInvitesInBackground(bulkInviteData, historyIds)
 
   return historyIds
 }
@@ -187,7 +187,6 @@ export const sendBulkCalendarInvitesAsync = async (
  */
 const sendBulkCalendarInvitesInBackground = async (
   bulkInviteData: CalendarInviteData[],
-  template: Template,
   historyIds: string[]
 ): Promise<void> => {
   const settings = await import('../repositories/LocalStorageSettingsRepository').then(

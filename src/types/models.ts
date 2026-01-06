@@ -76,9 +76,10 @@ export interface CalendarInviteHistoryRecord {
   endTime: string
   timezone: string
   attachmentName?: string
-  status: 'sent' | 'failed'
+  status: 'sent' | 'failed' | 'pending'
   sentAt?: string
   createdAt?: string
+  errorMessage?: string
 }
 
 // Analytics types
