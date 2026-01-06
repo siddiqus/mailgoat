@@ -35,6 +35,7 @@ function Analytics() {
   const [chartStackMode, setChartStackMode] = useState('templates') // 'templates' or 'campaigns'
   const [analyticsData, setAnalyticsData] = useState(null)
   const [selectedEmail, setSelectedEmail] = useState(null)
+  const [emailsTab, setEmailsTab] = useState('opened') // 'opened' or 'unopened'
 
   useEffect(() => {
     loadInitialData()
@@ -159,6 +160,12 @@ function Analytics() {
   const openedEmails = useMemo(() => {
     if (!analyticsData) return []
     return filteredHistory.filter(record => openedEmailIds.has(record.emailId))
+  }, [filteredHistory, openedEmailIds, analyticsData])
+
+  // Filter unopened emails
+  const unopenedEmails = useMemo(() => {
+    if (!analyticsData) return []
+    return filteredHistory.filter(record => !openedEmailIds.has(record.emailId))
   }, [filteredHistory, openedEmailIds, analyticsData])
 
   // Prepare chart data
@@ -434,12 +441,95 @@ function Analytics() {
             )}
           </PageCard>
 
-          {/* Opened Emails List */}
-          <PageCard header={`Opened Emails (${openedEmails.length})`}>
-            {openedEmails.length === 0 ? (
-              <div className="alert alert-info">
-                No emails have been opened yet for the selected filters.
+          {/* Emails List with Tabs */}
+          <PageCard
+            header="Email Status"
+            headerActions={
+              <div className="btn-group btn-group-sm" role="group">
+                <button
+                  type="button"
+                  className={`btn ${emailsTab === 'opened' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  onClick={() => setEmailsTab('opened')}
+                >
+                  Opened Emails ({openedEmails.length})
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${emailsTab === 'unopened' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  onClick={() => setEmailsTab('unopened')}
+                >
+                  Unopened ({unopenedEmails.length})
+                </button>
               </div>
+            }
+          >
+            {emailsTab === 'opened' ? (
+              // Opened Emails Tab
+              openedEmails.length === 0 ? (
+                <div className="alert alert-info">
+                  No emails have been opened yet for the selected filters.
+                </div>
+              ) : (
+                <div
+                  className="rounded"
+                  style={{
+                    height: '400px',
+                    overflow: 'auto',
+                  }}
+                >
+                  <table className="table table-hover mb-0">
+                    <thead
+                      style={{
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1,
+                      }}
+                    >
+                      <tr>
+                        <th style={{ width: '180px' }}>Sent At</th>
+                        <th>Recipient</th>
+                        <th>Subject</th>
+                        <th>CC</th>
+                        <th style={{ width: '100px' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {openedEmails.map(record => (
+                        <tr key={record.id}>
+                          <td className="align-middle">
+                            <small>{new Date(record.sentAt).toLocaleString()}</small>
+                          </td>
+                          <td className="align-middle">
+                            <small>{formatRecipients(record.recipients)}</small>
+                          </td>
+                          <td className="align-middle">
+                            <small>{record.subject}</small>
+                          </td>
+                          <td className="align-middle">
+                            <small>
+                              {record.ccList && record.ccList.length > 0
+                                ? formatRecipients(record.ccList)
+                                : '-'}
+                            </small>
+                          </td>
+                          <td className="align-middle">
+                            <button
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => setSelectedEmail(record)}
+                              title="View email"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : // Unopened Emails Tab
+            unopenedEmails.length === 0 ? (
+              <div className="alert alert-success">All emails have been opened!</div>
             ) : (
               <div
                 className="rounded"
@@ -458,42 +548,27 @@ function Analytics() {
                   >
                     <tr>
                       <th style={{ width: '180px' }}>Sent At</th>
-                      <th>Recipient</th>
-                      <th>Subject</th>
-                      <th>CC</th>
-                      <th style={{ width: '100px' }}>Actions</th>
+                      <th>Recipient Email</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {openedEmails.map(record => (
-                      <tr key={record.id}>
-                        <td className="align-middle">
-                          <small>{new Date(record.sentAt).toLocaleString()}</small>
-                        </td>
-                        <td className="align-middle">
-                          <small>{formatRecipients(record.recipients)}</small>
-                        </td>
-                        <td className="align-middle">
-                          <small>{record.subject}</small>
-                        </td>
-                        <td className="align-middle">
-                          <small>
-                            {record.ccList && record.ccList.length > 0
-                              ? formatRecipients(record.ccList)
-                              : '-'}
-                          </small>
-                        </td>
-                        <td className="align-middle">
-                          <button
-                            className="btn btn-sm btn-outline-primary"
-                            onClick={() => setSelectedEmail(record)}
-                            title="View email"
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {unopenedEmails.map(record => {
+                      // Handle both array and string recipients
+                      const recipientsList = Array.isArray(record.recipients)
+                        ? record.recipients
+                        : [record.recipients]
+
+                      return recipientsList.map((recipient, idx) => (
+                        <tr key={`${record.id}-${idx}`}>
+                          <td className="align-middle">
+                            <small>{new Date(record.sentAt).toLocaleString()}</small>
+                          </td>
+                          <td className="align-middle">
+                            <small>{recipient}</small>
+                          </td>
+                        </tr>
+                      ))
+                    })}
                   </tbody>
                 </table>
               </div>
