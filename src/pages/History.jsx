@@ -504,21 +504,6 @@ function History() {
                       placeholder="Filter by campaign..."
                       allowClear={true}
                     />
-                    {selectedCampaignFilter !== 'all' && selectedCampaignFilter !== 'none' && (
-                      <div
-                        style={{
-                          width: '38px',
-                          height: '38px',
-                          backgroundColor:
-                            campaigns.find(c => c.id === selectedCampaignFilter)?.color ||
-                            '#0d6efd',
-                          borderRadius: '4px',
-                          border: '1px solid #dee2e6',
-                          flexShrink: 0,
-                        }}
-                        title={campaigns.find(c => c.id === selectedCampaignFilter)?.name}
-                      />
-                    )}
                   </div>
 
                   {/* Template Filter */}
