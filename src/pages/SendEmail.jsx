@@ -782,7 +782,7 @@ function SendEmail() {
           No templates available. Please create a template first in the Templates page.
         </div>
       ) : (
-        <Tabs defaultTab="single" onTabChange={setCurrentTab}>
+        <Tabs defaultTab="single" onChange={setCurrentTab}>
           <Tabs.Tab value="single" label="Send Single Email">
             <div className="row">
               {/* Left Column - Configuration */}
