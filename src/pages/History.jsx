@@ -494,9 +494,9 @@ function History() {
             <div>
               {/* Filters */}
               <PageCard className="mb-3">
-                <div className="d-flex align-items-center gap-2 mb-3">
+                <div className="d-flex align-items-center gap-2">
                   {/* Campaign Filter */}
-                  <div className="d-flex align-items-center gap-2" style={{ flex: 1 }}>
+                  <div style={{ flex: 1 }}>
                     <SearchableSelect
                       options={campaignOptions}
                       value={selectedCampaignFilter}
@@ -543,20 +543,21 @@ function History() {
                     </button>
                   )}
                 </div>
-
+              </PageCard>
+              <div className="mb-3">
                 {/* Status Summary */}
                 <div className="d-flex gap-3">
-                  <span
-                    className="badge bg-warning text-dark"
-                    style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
-                  >
-                    Pending: {emailStatusCounts.pending}
-                  </span>
                   <span
                     className="badge bg-success"
                     style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
                   >
                     Sent: {emailStatusCounts.sent}
+                  </span>
+                  <span
+                    className="badge bg-warning text-dark"
+                    style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
+                  >
+                    Pending: {emailStatusCounts.pending}
                   </span>
                   <span
                     className="badge bg-danger"
@@ -565,8 +566,7 @@ function History() {
                     Failed: {emailStatusCounts.failed}
                   </span>
                 </div>
-              </PageCard>
-
+              </div>
               <PageCard className="p-0">
                 <div className="table-responsive" style={{ height: '400px' }}>
                   <table className="table table-hover mb-0">
