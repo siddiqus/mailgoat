@@ -310,6 +310,22 @@ function History() {
     return filtered
   }, [calendarHistory, selectedCalendarTemplateFilter])
 
+  // Calculate status counts for emails
+  const emailStatusCounts = useMemo(() => {
+    const counts = { pending: 0, sent: 0, failed: 0 }
+    filteredHistory.forEach(record => {
+      if (record.status in counts) {
+        counts[record.status]++
+      }
+    })
+    return counts
+  }, [filteredHistory])
+
+  // Calculate status counts for calendar invites (they're all sent)
+  const calendarStatusCounts = useMemo(() => {
+    return { sent: filteredCalendarHistory.length }
+  }, [filteredCalendarHistory])
+
   // Paginate email history
   const paginatedEmailHistory = useMemo(() => {
     const startIndex = (emailPage - 1) * itemsPerPage
@@ -478,62 +494,77 @@ function History() {
             <div>
               {/* Filters */}
               <PageCard className="mb-3">
-                <div className="row g-3">
+                <div className="d-flex align-items-center gap-2 mb-3">
                   {/* Campaign Filter */}
-                  <div className="col-md-6">
-                    <div className="d-flex align-items-end gap-2">
-                      <div style={{ flex: 1 }}>
-                        <SearchableSelect
-                          label="Filter by Campaign:"
-                          options={campaignOptions}
-                          value={selectedCampaignFilter}
-                          onChange={handleCampaignFilterChange}
-                          placeholder="Select a campaign..."
-                          allowClear={true}
-                        />
-                      </div>
-                      {selectedCampaignFilter !== 'all' && selectedCampaignFilter !== 'none' && (
-                        <div
-                          style={{
-                            width: '38px',
-                            height: '38px',
-                            backgroundColor:
-                              campaigns.find(c => c.id === selectedCampaignFilter)?.color ||
-                              '#0d6efd',
-                            borderRadius: '4px',
-                            border: '1px solid #dee2e6',
-                            flexShrink: 0,
-                          }}
-                          title={campaigns.find(c => c.id === selectedCampaignFilter)?.name}
-                        />
-                      )}
-                    </div>
+                  <div className="d-flex align-items-center gap-2" style={{ flex: 1 }}>
+                    <SearchableSelect
+                      options={campaignOptions}
+                      value={selectedCampaignFilter}
+                      onChange={handleCampaignFilterChange}
+                      placeholder="Filter by campaign..."
+                      allowClear={true}
+                    />
+                    {selectedCampaignFilter !== 'all' && selectedCampaignFilter !== 'none' && (
+                      <div
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          backgroundColor:
+                            campaigns.find(c => c.id === selectedCampaignFilter)?.color ||
+                            '#0d6efd',
+                          borderRadius: '4px',
+                          border: '1px solid #dee2e6',
+                          flexShrink: 0,
+                        }}
+                        title={campaigns.find(c => c.id === selectedCampaignFilter)?.name}
+                      />
+                    )}
                   </div>
 
                   {/* Template Filter */}
-                  <div className="col-md-6">
+                  <div style={{ flex: 1 }}>
                     <SearchableSelect
-                      label="Filter by Template:"
                       options={templateOptions}
                       value={selectedTemplateFilter}
                       onChange={handleTemplateFilterChange}
-                      placeholder="Select a template..."
+                      placeholder="Filter by template..."
                       allowClear={true}
                     />
                   </div>
-                </div>
 
-                {/* Clear Filters Button */}
-                {(selectedCampaignFilter !== 'all' || selectedTemplateFilter !== 'all') && (
-                  <div className="mt-3">
+                  {/* Clear Filters Button */}
+                  {(selectedCampaignFilter !== 'all' || selectedTemplateFilter !== 'all') && (
                     <button
                       className="btn btn-sm btn-outline-secondary"
                       onClick={handleClearFilters}
+                      style={{ flexShrink: 0 }}
                     >
-                      Clear All Filters
+                      Clear Filters
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {/* Status Summary */}
+                <div className="d-flex gap-3">
+                  <span
+                    className="badge bg-warning text-dark"
+                    style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
+                  >
+                    Pending: {emailStatusCounts.pending}
+                  </span>
+                  <span
+                    className="badge bg-success"
+                    style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
+                  >
+                    Sent: {emailStatusCounts.sent}
+                  </span>
+                  <span
+                    className="badge bg-danger"
+                    style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
+                  >
+                    Failed: {emailStatusCounts.failed}
+                  </span>
+                </div>
               </PageCard>
 
               <PageCard className="p-0">
@@ -661,37 +692,45 @@ function History() {
             <div>
               {/* Filters */}
               <PageCard className="mb-3">
-                <div className="row g-3">
+                <div className="d-flex align-items-center gap-2 mb-3">
                   {/* Template Filter */}
-                  <div className="col-md-12">
+                  <div style={{ flex: 1 }}>
                     <SearchableSelect
-                      label="Filter by Template:"
                       options={calendarTemplateOptions}
                       value={selectedCalendarTemplateFilter}
                       onChange={value => {
                         setSelectedCalendarTemplateFilter(value)
                         setCalendarPage(1) // Reset to first page when filter changes
                       }}
-                      placeholder="Select a template..."
+                      placeholder="Filter by template..."
                       allowClear={true}
                     />
                   </div>
-                </div>
 
-                {/* Clear Filters Button */}
-                {selectedCalendarTemplateFilter !== 'all' && (
-                  <div className="mt-3">
+                  {/* Clear Filters Button */}
+                  {selectedCalendarTemplateFilter !== 'all' && (
                     <button
                       className="btn btn-sm btn-outline-secondary"
                       onClick={() => {
                         setSelectedCalendarTemplateFilter('all')
                         setCalendarPage(1) // Reset to first page
                       }}
+                      style={{ flexShrink: 0 }}
                     >
                       Clear Filter
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {/* Status Summary */}
+                <div className="d-flex gap-3">
+                  <span
+                    className="badge bg-success"
+                    style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
+                  >
+                    Sent: {calendarStatusCounts.sent}
+                  </span>
+                </div>
               </PageCard>
 
               <PageCard className="p-0">
