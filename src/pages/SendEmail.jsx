@@ -290,17 +290,11 @@ function SendEmail() {
     setRecipients(value)
 
     if (value.trim()) {
-      // Check if multiple emails are entered
-      const emailList = parseEmailList(value)
-      if (emailList.length > 1) {
-        setRecipientsError('Only one recipient email is allowed for single email')
+      const validation = validateEmailList(value)
+      if (!validation.isValid) {
+        setRecipientsError(`Invalid email(s): ${validation.invalidEmails.join(', ')}`)
       } else {
-        const validation = validateEmailList(value)
-        if (!validation.isValid) {
-          setRecipientsError(`Invalid email: ${validation.invalidEmails.join(', ')}`)
-        } else {
-          setRecipientsError('')
-        }
+        setRecipientsError('')
       }
     } else {
       setRecipientsError('')
@@ -327,17 +321,6 @@ function SendEmail() {
       showAlert({
         title: 'Validation Error',
         message: 'Please enter a recipient email address',
-        type: 'warning',
-      })
-      return
-    }
-
-    // Check if multiple emails are entered
-    const emailList = parseEmailList(recipients)
-    if (emailList.length > 1) {
-      showAlert({
-        title: 'Validation Error',
-        message: 'Only one recipient email is allowed for single email',
         type: 'warning',
       })
       return
@@ -856,16 +839,16 @@ function SendEmail() {
                         Recipient <span className="text-danger">*</span>
                       </label>
                       <input
-                        type="email"
+                        type="text"
                         className={`form-control ${recipientsError ? 'is-invalid' : ''}`}
                         value={recipients}
                         onChange={e => handleRecipientsChange(e.target.value)}
-                        placeholder="user@example.com"
+                        placeholder="user@example.com, user2@example.com"
                       />
                       {recipientsError ? (
                         <div className="invalid-feedback">{recipientsError}</div>
                       ) : (
-                        <div className="form-text">Enter a single recipient email address</div>
+                        <div className="form-text">Separate multiple emails with commas</div>
                       )}
                     </div>
 
