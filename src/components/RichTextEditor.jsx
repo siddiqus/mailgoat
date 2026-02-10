@@ -346,7 +346,16 @@ function RichTextEditor({ value, onChange, placeholder }) {
       <EditorContent editor={editor} className="editor-content" placeholder={placeholder} />
 
       <div className="form-text mt-2">
-        💡 Tip: Use {'{{parameterName}}'} for dynamic values (e.g., {'{{name}}'}, {'{{email}}'})
+        💡 Tips:
+        <ul>
+          <li>
+            Use {'{{parameterName}}'} for dynamic values (e.g., {'{{name}}'}, {'{{email}}'})
+          </li>
+          <li>
+            For formatting parameters, please select the whole text and apply your formatting, for
+            example for {'{{name}}'}, select the whole text including the braces.
+          </li>
+        </ul>
       </div>
     </div>
   )
