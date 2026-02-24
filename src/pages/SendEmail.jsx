@@ -1045,7 +1045,7 @@ function SendEmail() {
                 <input
                   type="file"
                   className="form-control"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".csv,.xlsx,.xls,.numbers"
                   onChange={handleFileUpload}
                 />
                 {uploadedFile && (

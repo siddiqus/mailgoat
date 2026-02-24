@@ -162,9 +162,13 @@ export const parseFile = async (file: File): Promise<DataRow[]> => {
 
   if (fileName.endsWith('.csv')) {
     return await parseCSVFile(file)
-  } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+  } else if (
+    fileName.endsWith('.xlsx') ||
+    fileName.endsWith('.xls') ||
+    fileName.endsWith('.numbers')
+  ) {
     return await parseExcelFile(file)
   } else {
-    throw new Error('Unsupported file format. Please upload a CSV or Excel file.')
+    throw new Error('Unsupported file format. Please upload a CSV, Excel, or Numbers file.')
   }
 }
