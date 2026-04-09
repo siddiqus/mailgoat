@@ -10,7 +10,11 @@ type DataRow = Record<string, string>
  * @param templateParams - Template parameters
  * @returns Array of error messages
  */
-export const validateDataRows = (data: DataRow[], templateParams: string[]): string[] => {
+export const validateDataRows = (
+  data: DataRow[],
+  templateParams: string[],
+  options?: { isCalendarInvite?: boolean }
+): string[] => {
   const errors: string[] = []
 
   if (data.length === 0) {
@@ -23,6 +27,15 @@ export const validateDataRows = (data: DataRow[], templateParams: string[]): str
   // Check for recipient column (required)
   if (!headers.includes('recipient')) {
     errors.push('Missing required column: recipient')
+  }
+
+  // Check for calendar detail columns (required for calendar invites)
+  const calendarColumns = ['date', 'time', 'duration', 'timezone']
+  if (options?.isCalendarInvite) {
+    const missingCalendarCols = calendarColumns.filter(col => !headers.includes(col))
+    if (missingCalendarCols.length > 0) {
+      errors.push(`Missing required calendar columns: ${missingCalendarCols.join(', ')}`)
+    }
   }
 
   // Check for template parameter columns
@@ -63,6 +76,24 @@ export const validateDataRows = (data: DataRow[], templateParams: string[]): str
           errors.push(`Row ${rowNum}: Invalid CC email format "${email}"`)
         }
       })
+    }
+
+    // Validate calendar detail fields per row
+    if (options?.isCalendarInvite) {
+      if (!row.date || row.date.trim() === '') {
+        errors.push(`Row ${rowNum}: Missing date`)
+      }
+      if (!row.time || row.time.trim() === '') {
+        errors.push(`Row ${rowNum}: Missing time`)
+      }
+      if (!row.duration || row.duration.trim() === '') {
+        errors.push(`Row ${rowNum}: Missing duration`)
+      } else if (isNaN(Number(row.duration)) || Number(row.duration) <= 0) {
+        errors.push(`Row ${rowNum}: Duration must be a positive number`)
+      }
+      if (!row.timezone || row.timezone.trim() === '') {
+        errors.push(`Row ${rowNum}: Missing timezone`)
+      }
     }
 
     // Check for missing parameter values

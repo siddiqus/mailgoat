@@ -42,13 +42,25 @@ export const prepareEmailFromTemplate = (
  * @param template - Email template
  * @returns CSV content
  */
-export const generateSampleCSV = (template: Template): string => {
-  const columns = ['recipient', 'cc', ...(template.parameters || [])]
+export const generateSampleCSV = (
+  template: Template,
+  options?: { isCalendarInvite?: boolean }
+): string => {
+  // Calendar invites need per-row date/time/duration/timezone columns
+  const calendarColumns = options?.isCalendarInvite ? ['date', 'time', 'duration', 'timezone'] : []
+  // Filter out calendar-related params from template parameters to avoid duplication
+  const calendarParamNames = ['date', 'startTime', 'endTime', 'timezone', 'durationInMinutes']
+  const filteredParams = (template.parameters || []).filter(p => !calendarParamNames.includes(p))
+  const columns = ['recipient', 'cc', ...calendarColumns, ...filteredParams]
   const headers = columns.join(',')
   const sampleRow = columns
     .map(col => {
       if (col === 'recipient') return 'user@example.com'
       if (col === 'cc') return '' // CC is optional, leave empty
+      if (col === 'date') return '2026-04-15'
+      if (col === 'time') return '02:00 PM'
+      if (col === 'duration') return '60'
+      if (col === 'timezone') return 'Eastern Standard Time'
       return `sample_${col}`
     })
     .join(',')

@@ -2,6 +2,13 @@ import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { Settings, Template } from '../types/models'
 import { parseEmailList } from '../utils/emailUtils'
+import {
+  calculateEndTime,
+  combineDateAndTime,
+  format12HourTime,
+  formatLongDate,
+  parse12HourTimeTo24Hour,
+} from '../utils/timeUtils'
 import timezones from '../utils/timezones.json'
 import {
   createPendingCalendarInviteHistoryRecord,
@@ -95,31 +102,31 @@ export async function sendCalendarInvite(
 }
 
 /**
- * Prepare bulk calendar invite data from data rows and template
- * @param dataRows - Data rows with calendar invite details
+ * Prepare bulk calendar invite data from data rows and template.
+ * Each row provides its own date, time, duration, and timezone.
+ * @param dataRows - Data rows with per-row calendar invite details (must include date, time, duration, timezone)
  * @param template - Calendar invite template
- * @param baseDate - Base date for calendar invites
- * @param baseTime - Base time for calendar invites
- * @param duration - Duration in minutes
- * @param timezone - Timezone
  * @returns Bulk calendar invite data
  */
 export const prepareBulkCalendarInviteData = (
   dataRows: DataRow[],
-  template: Template,
-  baseDate: string,
-  baseTime: string,
-  duration: string,
-  timezone: TimezoneType
+  template: Template
 ): CalendarInviteData[] => {
   return dataRows.map(row => {
+    // Compute per-row start/end times
+    const time24h = parse12HourTimeTo24Hour(row.time || '')
+    const rowStartTime = combineDateAndTime(row.date || '', time24h)
+    const rowEndTime = calculateEndTime(rowStartTime, row.duration || '60')
+    const rowTimezone = (row.timezone || '') as TimezoneType
+
     // Replace parameters in subject and message
     const paramValues = {
       ...row,
-      date: baseDate,
-      startTime: baseTime,
-      duration,
-      timezone,
+      date: formatLongDate(rowStartTime),
+      startTime: format12HourTime(rowStartTime),
+      endTime: format12HourTime(rowEndTime),
+      timezone: rowTimezone,
+      durationInMinutes: row.duration || '',
     }
 
     const inviteSubject = replaceParameters(
@@ -139,9 +146,9 @@ export const prepareBulkCalendarInviteData = (
       cc: ccListArray.join(', '),
       subject: inviteSubject,
       message: inviteMessage,
-      startTime: row.startTime || '',
-      endTime: row.endTime || '',
-      timezone: (row.timezone as TimezoneType) || timezone,
+      startTime: new Date(rowStartTime).toISOString(),
+      endTime: new Date(rowEndTime).toISOString(),
+      timezone: rowTimezone,
     }
   })
 }

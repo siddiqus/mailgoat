@@ -72,12 +72,6 @@ function CalendarInvites() {
   const [previewIndex, setPreviewIndex] = useState(null)
   const [manualEntries, setManualEntries] = useState([])
 
-  // Bulk calendar details (shared across all invites)
-  const [bulkDate, setBulkDate] = useState('')
-  const [bulkTime12h, setBulkTime12h] = useState('02:00 PM')
-  const [bulkTimezone, setBulkTimezone] = useState(getBrowserTimezone())
-  const [bulkDurationInMinutes, setBulkDurationInMinutes] = useState('60')
-
   // Draft state
   const [currentTab, setCurrentTab] = useState('single')
   const [draftLoaded, setDraftLoaded] = useState(false)
@@ -176,30 +170,15 @@ function CalendarInvites() {
       const draftData = {
         templateId: bulkTemplate?.id,
         bulkInputMode,
-        bulkDate,
-        bulkTime12h,
-        bulkTimezone,
-        bulkDurationInMinutes,
         manualEntries,
         fileData: bulkInputMode === 'file' ? fileData : [],
       }
       // Only save if there's some data
-      if (bulkTemplate || manualEntries.length > 0 || fileData.length > 0 || bulkDate) {
+      if (bulkTemplate || manualEntries.length > 0 || fileData.length > 0) {
         saveDraft(DRAFT_KEYS.CALENDAR_INVITE_BULK, draftData)
       }
     }
-  }, [
-    bulkTemplate,
-    bulkInputMode,
-    bulkDate,
-    bulkTime12h,
-    bulkTimezone,
-    bulkDurationInMinutes,
-    manualEntries,
-    fileData,
-    draftLoaded,
-    currentTab,
-  ])
+  }, [bulkTemplate, bulkInputMode, manualEntries, fileData, draftLoaded, currentTab])
 
   const loadDraftData = () => {
     // Load single calendar invite draft
@@ -257,18 +236,6 @@ function CalendarInvites() {
       if (bulkDraft.bulkInputMode) {
         setBulkInputMode(bulkDraft.bulkInputMode)
       }
-      if (bulkDraft.bulkDate) {
-        setBulkDate(bulkDraft.bulkDate)
-      }
-      if (bulkDraft.bulkTime12h) {
-        setBulkTime12h(bulkDraft.bulkTime12h)
-      }
-      if (bulkDraft.bulkTimezone) {
-        setBulkTimezone(bulkDraft.bulkTimezone)
-      }
-      if (bulkDraft.bulkDurationInMinutes) {
-        setBulkDurationInMinutes(bulkDraft.bulkDurationInMinutes)
-      }
       if (bulkDraft.manualEntries && bulkDraft.manualEntries.length > 0) {
         setManualEntries(bulkDraft.manualEntries)
       }
@@ -296,10 +263,6 @@ function CalendarInvites() {
       clearDraft(DRAFT_KEYS.CALENDAR_INVITE_BULK)
       setBulkTemplate(null)
       setBulkInputMode('file')
-      setBulkDate('')
-      setBulkTime12h('02:00 PM')
-      setBulkTimezone(getBrowserTimezone())
-      setBulkDurationInMinutes('60')
       setUploadedFile(null)
       setFileData([])
       setFileErrors([])
@@ -680,6 +643,10 @@ function CalendarInvites() {
     const newEntry = {
       recipient: '',
       cc: '',
+      date: '',
+      time: '02:00 PM',
+      duration: '60',
+      timezone: getBrowserTimezone(),
     }
 
     if (bulkTemplate?.parameters) {
@@ -734,6 +701,24 @@ function CalendarInvites() {
         }
       }
 
+      // Validate per-row calendar fields
+      if (!entry.date || !entry.date.trim()) {
+        errors.push(`Row ${index + 1}: Date is required`)
+      }
+      if (!entry.time || !entry.time.trim()) {
+        errors.push(`Row ${index + 1}: Time is required`)
+      } else if (!parse12HourTimeTo24Hour(entry.time)) {
+        errors.push(`Row ${index + 1}: Invalid time format. Use HH:MM AM/PM (e.g., 02:00 PM)`)
+      }
+      if (!entry.duration || !entry.duration.trim()) {
+        errors.push(`Row ${index + 1}: Duration is required`)
+      } else if (isNaN(Number(entry.duration)) || Number(entry.duration) <= 0) {
+        errors.push(`Row ${index + 1}: Duration must be a positive number`)
+      }
+      if (!entry.timezone || !entry.timezone.trim()) {
+        errors.push(`Row ${index + 1}: Timezone is required`)
+      }
+
       if (bulkTemplate?.parameters) {
         bulkTemplate.parameters.forEach(param => {
           // Skip predefined calendar parameters
@@ -752,7 +737,7 @@ function CalendarInvites() {
   const handleDownloadSampleCSV = () => {
     if (!bulkTemplate) return
 
-    const csvContent = generateSampleCSV(bulkTemplate)
+    const csvContent = generateSampleCSV(bulkTemplate, { isCalendarInvite: true })
     downloadCSV(csvContent, `${bulkTemplate.name}_template.csv`)
   }
 
@@ -771,7 +756,7 @@ function CalendarInvites() {
       const bulkParams = bulkTemplate?.parameters?.filter(
         param => !['date', 'startTime', 'endTime', 'timezone', 'durationInMinutes'].includes(param)
       )
-      const errors = validateDataRows(data, bulkParams)
+      const errors = validateDataRows(data, bulkParams, { isCalendarInvite: true })
 
       setUploadedFile(file)
       setFileData(data)
@@ -797,19 +782,19 @@ function CalendarInvites() {
   const getPreviewData = rowData => {
     if (!bulkTemplate) return { subject: '', htmlBody: '' }
 
-    // Calculate start and end times for preview
-    const time24h = parse12HourTimeTo24Hour(bulkTime12h)
-    const bulkStartTime = combineDateAndTime(bulkDate, time24h)
-    const bulkEndTime = calculateEndTime(bulkStartTime, bulkDurationInMinutes)
+    // Calculate per-row start and end times for preview
+    const time24h = parse12HourTimeTo24Hour(rowData.time || '')
+    const rowStartTime = combineDateAndTime(rowData.date || '', time24h)
+    const rowEndTime = calculateEndTime(rowStartTime, rowData.duration || '60')
 
     // Prepare parameters for template
     const allParams = {
       ...rowData,
-      date: formatLongDate(bulkStartTime),
-      startTime: format12HourTime(bulkStartTime),
-      endTime: format12HourTime(bulkEndTime),
-      timezone: bulkTimezone,
-      durationInMinutes: bulkDurationInMinutes,
+      date: formatLongDate(rowStartTime),
+      startTime: format12HourTime(rowStartTime),
+      endTime: format12HourTime(rowEndTime),
+      timezone: rowData.timezone || '',
+      durationInMinutes: rowData.duration || '',
     }
 
     return prepareEmailFromTemplate(bulkTemplate, allParams)
@@ -820,43 +805,6 @@ function CalendarInvites() {
       showAlert({
         title: 'Validation Error',
         message: 'Please select a template',
-        type: 'warning',
-      })
-      return
-    }
-
-    // Validate bulk calendar details
-    if (!bulkDate) {
-      showAlert({
-        title: 'Validation Error',
-        message: 'Please select a date for the calendar invites',
-        type: 'warning',
-      })
-      return
-    }
-
-    if (!bulkTime12h) {
-      showAlert({
-        title: 'Validation Error',
-        message: 'Please enter a start time',
-        type: 'warning',
-      })
-      return
-    }
-
-    if (!parse12HourTimeTo24Hour(bulkTime12h)) {
-      showAlert({
-        title: 'Validation Error',
-        message: 'Invalid time format. Please use HH:MM AM/PM (e.g., 02:00 PM)',
-        type: 'warning',
-      })
-      return
-    }
-
-    if (!bulkDurationInMinutes || parseInt(bulkDurationInMinutes, 10) <= 0) {
-      showAlert({
-        title: 'Validation Error',
-        message: 'Please enter a valid duration',
         type: 'warning',
       })
       return
@@ -921,27 +869,9 @@ function CalendarInvites() {
 
     setSending(true)
     try {
-      // Calculate start and end times
-      const time24h = parse12HourTimeTo24Hour(bulkTime12h)
-      const bulkStartTime = combineDateAndTime(bulkDate, time24h)
-      const bulkEndTime = calculateEndTime(bulkStartTime, bulkDurationInMinutes)
-
-      // Add startTime and endTime to each data row
-      const enrichedData = dataToSend.map(row => ({
-        ...row,
-        startTime: new Date(bulkStartTime).toISOString(),
-        endTime: new Date(bulkEndTime).toISOString(),
-        timezone: bulkTimezone,
-      }))
-
-      const bulkInviteData = prepareBulkCalendarInviteData(
-        enrichedData,
-        bulkTemplate,
-        formatLongDate(bulkStartTime),
-        format12HourTime(bulkStartTime),
-        bulkDurationInMinutes,
-        bulkTimezone
-      )
+      // Each row already has its own date, time, duration, timezone
+      // prepareBulkCalendarInviteData will compute startTime/endTime per row
+      const bulkInviteData = prepareBulkCalendarInviteData(dataToSend, bulkTemplate)
 
       await sendBulkCalendarInvitesAsync(bulkInviteData, bulkTemplate)
 
@@ -1457,58 +1387,9 @@ function CalendarInvites() {
               </div>
             </div>
 
-            {bulkTemplate && (
-              <PageCard header="3. Calendar Details (Applies to All Invites)" className="mb-3">
-                <div className="row">
-                  <div className="col-md-3 mb-3">
-                    <label className="form-label">
-                      Date <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={bulkDate}
-                      onChange={e => setBulkDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="col-md-3 mb-3">
-                    <label className="form-label">
-                      Start Time <span className="text-danger">*</span>
-                    </label>
-                    <TimePickerInput value={bulkTime12h} onChange={setBulkTime12h} />
-                  </div>
-                  <div className="col-md-3 mb-3">
-                    <label className="form-label">
-                      Duration (minutes) <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={bulkDurationInMinutes}
-                      onChange={e => setBulkDurationInMinutes(e.target.value)}
-                      min="1"
-                      placeholder="60"
-                    />
-                  </div>
-                  <div className="col-md-3 mb-3">
-                    <label className="form-label">
-                      Timezone <span className="text-danger">*</span>
-                    </label>
-                    <SearchableSelect
-                      options={timezoneOptions}
-                      value={bulkTimezone}
-                      onChange={value => setBulkTimezone(value)}
-                      placeholder="Select timezone"
-                      allowClear={false}
-                    />
-                  </div>
-                </div>
-              </PageCard>
-            )}
-
             {bulkTemplate && bulkInputMode === 'file' && (
               <PageCard
-                header="4. Upload File"
+                header="3. Upload File"
                 className="mb-3"
                 headerActions={
                   <button
@@ -1534,7 +1415,7 @@ function CalendarInvites() {
                 <div className="mt-3 small text-muted">
                   <strong>Accepted formats:</strong> CSV (.csv), Excel (.xlsx, .xls)
                   <br />
-                  <strong>Required columns:</strong> recipient
+                  <strong>Required columns:</strong> recipient, date, time, duration, timezone
                   {bulkTemplate.parameters &&
                     bulkTemplate.parameters.filter(
                       param =>
@@ -1560,6 +1441,9 @@ function CalendarInvites() {
                     )}
                   <br />
                   <strong>Optional columns:</strong> cc
+                  <br />
+                  <strong>Format tips:</strong> date: YYYY-MM-DD, time: HH:MM AM/PM, duration:
+                  minutes (e.g., 60), timezone: Windows format (e.g., Eastern Standard Time)
                 </div>
               </PageCard>
             )}
@@ -1568,7 +1452,7 @@ function CalendarInvites() {
               <PageCard
                 header={
                   <span>
-                    4. Enter Recipients
+                    3. Enter Recipients
                     {manualEntries.length > 0 && (
                       <span className="text-muted ms-2">
                         ({manualEntries.length} recipient{manualEntries.length !== 1 ? 's' : ''})
@@ -1622,6 +1506,18 @@ function CalendarInvites() {
                             Recipient <span className="text-danger">*</span>
                           </th>
                           <th style={{ minWidth: '180px' }}>CC</th>
+                          <th style={{ minWidth: '140px' }}>
+                            Date <span className="text-danger">*</span>
+                          </th>
+                          <th style={{ minWidth: '140px' }}>
+                            Time <span className="text-danger">*</span>
+                          </th>
+                          <th style={{ minWidth: '100px' }}>
+                            Duration <span className="text-danger">*</span>
+                          </th>
+                          <th style={{ minWidth: '200px' }}>
+                            Timezone <span className="text-danger">*</span>
+                          </th>
                           {bulkTemplate?.parameters
                             ?.filter(
                               param =>
@@ -1663,6 +1559,43 @@ function CalendarInvites() {
                                 value={entry.cc}
                                 onChange={e => handleManualEntryChange(index, 'cc', e.target.value)}
                                 placeholder="cc@example.com"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="date"
+                                className="form-control form-control-sm"
+                                value={entry.date || ''}
+                                onChange={e =>
+                                  handleManualEntryChange(index, 'date', e.target.value)
+                                }
+                              />
+                            </td>
+                            <td>
+                              <TimePickerInput
+                                value={entry.time || '02:00 PM'}
+                                onChange={val => handleManualEntryChange(index, 'time', val)}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                className="form-control form-control-sm"
+                                value={entry.duration || ''}
+                                onChange={e =>
+                                  handleManualEntryChange(index, 'duration', e.target.value)
+                                }
+                                min="1"
+                                placeholder="60"
+                              />
+                            </td>
+                            <td>
+                              <SearchableSelect
+                                options={timezoneOptions}
+                                value={entry.timezone || ''}
+                                onChange={val => handleManualEntryChange(index, 'timezone', val)}
+                                placeholder="Select timezone"
+                                allowClear={false}
                               />
                             </td>
                             {bulkTemplate?.parameters
@@ -1727,7 +1660,7 @@ function CalendarInvites() {
 
             {bulkInputMode === 'file' && fileData.length > 0 && fileErrors.length === 0 && (
               <PageCard
-                header={`5. Review Data (${fileData.length} records)`}
+                header={`4. Review Data (${fileData.length} records)`}
                 className="mb-3"
                 headerActions={
                   <button className="btn btn-success" onClick={handleBulkSend} disabled={sending}>
@@ -1753,6 +1686,10 @@ function CalendarInvites() {
                         <th style={{ width: '50px' }}>#</th>
                         <th>Recipient</th>
                         <th>CC</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Duration</th>
+                        <th>Timezone</th>
                         {bulkTemplate?.parameters
                           ?.filter(
                             param =>
@@ -1776,6 +1713,10 @@ function CalendarInvites() {
                           <td>{index + 1}</td>
                           <td>{row.recipient}</td>
                           <td>{row.cc || '-'}</td>
+                          <td>{row.date || '-'}</td>
+                          <td>{row.time || '-'}</td>
+                          <td>{row.duration || '-'}</td>
+                          <td>{row.timezone || '-'}</td>
                           {bulkTemplate?.parameters
                             ?.filter(
                               param =>
@@ -1835,10 +1776,10 @@ function CalendarInvites() {
                               : manualEntries[previewIndex]
                           const previewData = getPreviewData(data)
 
-                          // Calculate times for preview
-                          const time24h = parse12HourTimeTo24Hour(bulkTime12h)
-                          const bulkStartTime = combineDateAndTime(bulkDate, time24h)
-                          const bulkEndTime = calculateEndTime(bulkStartTime, bulkDurationInMinutes)
+                          // Calculate per-row times for preview
+                          const time24h = parse12HourTimeTo24Hour(data.time || '')
+                          const rowStartTime = combineDateAndTime(data.date || '', time24h)
+                          const rowEndTime = calculateEndTime(rowStartTime, data.duration || '60')
 
                           return (
                             <>
@@ -1867,8 +1808,8 @@ function CalendarInvites() {
                                 <div className="col-md-6 mb-3">
                                   <label className="form-label fw-bold">Date:</label>
                                   <div className="p-2 bg-light rounded border">
-                                    {bulkStartTime ? (
-                                      formatLongDate(bulkStartTime)
+                                    {rowStartTime ? (
+                                      formatLongDate(rowStartTime)
                                     ) : (
                                       <span className="text-muted">Not set</span>
                                     )}
@@ -1876,7 +1817,9 @@ function CalendarInvites() {
                                 </div>
                                 <div className="col-md-6 mb-3">
                                   <label className="form-label fw-bold">Timezone:</label>
-                                  <div className="p-2 bg-light rounded border">{bulkTimezone}</div>
+                                  <div className="p-2 bg-light rounded border">
+                                    {data.timezone || <span className="text-muted">Not set</span>}
+                                  </div>
                                 </div>
                               </div>
 
@@ -1884,8 +1827,8 @@ function CalendarInvites() {
                                 <div className="col-md-6 mb-3">
                                   <label className="form-label fw-bold">Start Time:</label>
                                   <div className="p-2 bg-light rounded border">
-                                    {bulkStartTime ? (
-                                      format12HourTime(bulkStartTime)
+                                    {rowStartTime ? (
+                                      format12HourTime(rowStartTime)
                                     ) : (
                                       <span className="text-muted">Not set</span>
                                     )}
@@ -1894,8 +1837,8 @@ function CalendarInvites() {
                                 <div className="col-md-6 mb-3">
                                   <label className="form-label fw-bold">End Time:</label>
                                   <div className="p-2 bg-light rounded border">
-                                    {bulkEndTime ? (
-                                      format12HourTime(bulkEndTime)
+                                    {rowEndTime ? (
+                                      format12HourTime(rowEndTime)
                                     ) : (
                                       <span className="text-muted">Not set</span>
                                     )}
